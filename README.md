@@ -1,9 +1,9 @@
 ecpi
 ====
 
-Connect the EnergyCam to the Raspberry Pi to monitor the Energy Usage
+Connect the EnergyCam to a Raspberry Pi to monitor the energy usage
 
-The EnergyCam is the Smart Clip-on Meter Reader for Home and Business developed by FAST Forward AG 
+FAST EnergyCam: The quick and inexpensive way to turn your conventional meter into a smart metering device 
 (http://www.fastforward.ag/eng/index_eng.html)
 
 
@@ -19,11 +19,8 @@ Software:
 
 
 Features:
- - The Energy usage is shown as a interactive, zoomable chart of time on a website
- - install.txt describes how to 
-      configure the raspberry
-      connect the EnergyCam 
-      compile the sources
+ - The energy usage is shown as an interactive, zoomable chart of time on a website
+ - install.txt describes how to configure the raspberry, connect the EnergyCam and compile the sources
 
 
 Trademarks
