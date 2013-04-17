@@ -24,6 +24,12 @@ Features:
       configure the raspberry
       connect the EnergyCam 
       compile the sources
+
+
+Trademarks
+
+Raspberry Pi and the Raspberry Pi logo are registered trademarks of the Raspberry Pi Foundation (http://www.raspberrypi.org/)
+
  
 
 
