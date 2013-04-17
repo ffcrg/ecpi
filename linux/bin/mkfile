@@ -1,0 +1,27 @@
+INC= -I . -I ../src/libmodbus/  -I ../src/wiringPi/wiringPi/   -I ../src/energycam 
+
+ecpi: 		 		energycam.o wiringPi.o  modbus.o modbus-data.o modbus-rtu.o 
+					gcc -o ecpi energycam.o wiringPi.o modbus.o modbus-data.o modbus-rtu.o 
+
+
+				
+energycam.o:		../src/energycam/energycam.c ../src/energycam/energycampi.h 
+					gcc $(INC) -c ../src/energycam/energycam.c
+					
+			
+wiringPi.o:	    	../src/wiringPi/wiringPi/wiringPi.c 
+					gcc $(INC) -c ../src/wiringPi/wiringPi/wiringPi.c
+				
+modbus.o:			../src/libmodbus/modbus.c 
+					gcc $(INC) -c ../src/libmodbus/modbus.c
+
+modbus-data.o:		../src/libmodbus/modbus-data.c 
+					gcc $(INC) -c ../src/libmodbus/modbus-data.c
+				
+modbus-rtu.o:		../src/libmodbus/modbus-rtu.c 
+					gcc $(INC) -c ../src/libmodbus/modbus-rtu.c
+
+
+	  
+clean: 			@rm ec energycam.o wiringPi.o modbus.o modbus-data.o modbus-rtu.o
+				@echo Clean done

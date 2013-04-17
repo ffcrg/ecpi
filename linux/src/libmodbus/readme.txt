@@ -1,0 +1,1 @@
+SPR: taken from http://libmodbus.org V3.0.3

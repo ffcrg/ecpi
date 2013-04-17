@@ -1,0 +1,100 @@
+/////////////////////////
+// Config raspberry pi
+
+
+ //
+/////////////////////////
+
+//download Raspbian “wheezy” from http://www.raspberrypi.org/downloads
+use Raspi-Config to
+	- expand_rootfs 	-> expand root partition
+	- change_pass 		-> change password for "pi" user
+	- change_timezone
+	- configure_keyboards
+	- boot-behavior 	-> don't start desktop on boot
+
+
+
+//add a new user and config the usage
+$sudo adduser XXX
+$sudo nano /etc/group
+
+
+//Install apache,git and screen (http://raspi.tv/2012/using-screen-with-raspberry-pi-to-avoid-leaving-ssh-sessions-open)
+
+
+$sudo apt-get update
+
+$sudo apt-get install apache2
+$sudo apt-get install git
+$sudo apt-get install screen  (screen bash ; ctrl a,d - run app in additional terminal)
+
+
+
+
+
+//Configure serial Interface ; disable console 
+
+
+$sudo nano /boot/cmdline.txt
+
+
+// change : dwc_otg.lpm_enable=0 rpitestmode=1 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait
+
+// to       dwc_otg.lpm_enable=0 rpitestmode=1                                              console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait
+
+
+
+$sudo nano /etc/inittab
+
+// comment out the following line:   2:23:respawn:/sbin/getty -L ttyAMA0 115200 vt100
+
+
+
+
+
+
+
+//////////////////////////////////////////
+// connect EnergyCam to the Raspberry Pi//
+/////////////////////////////////////////
+
+
+//the 4 wire cable of the EnergyCam can be connected to the Raspberry Pi expansion port
+
+// EnergyCam  	- Raspberry Pi
+// 	3V3	- 3V3 (Pin 1)
+// 	GND	- GND (Pin 6)
+//	RxD	- TxD (Pin 8)
+//	TxD	- RxD (Pin 10)
+
+
+
+////////////////////////
+// ecpi sampe code //
+////////////////////////
+
+//get ecpi source
+$mkdir projects
+$cd projects
+$git clone https://github.com/ffcrg/ecpi.git
+
+$cd ecpi
+
+//copy websource to var/www
+$./cpwww.sh 
+
+
+//run make file
+$cd linux/bin
+$make -f mkfile
+
+//run App as root ; App writes to /var/www
+$screen bash
+$sudo ./ecpi
+<Ctrl a> d 
+
+//reconnect
+$screen -r
+
+//close ssh session ; ecpi continues to run
