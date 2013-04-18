@@ -1,8 +1,5 @@
 /////////////////////////
-// Config raspberry pi
-
-
- //
+// Config raspberry pi //
 /////////////////////////
 
 //download Raspbian “wheezy” from http://www.raspberrypi.org/downloads
@@ -13,6 +10,7 @@ use Raspi-Config to
 	- configure_keyboards
 	- boot-behavior 	-> don't start desktop on boot
 
+//use a keyboard and monitor on your raspberry or connect from your PC with a SSH Client (http://www.putty.org/
 
 
 //add a new user and config the usage
@@ -21,35 +19,23 @@ $sudo nano /etc/group
 
 
 //Install apache,git and screen (http://raspi.tv/2012/using-screen-with-raspberry-pi-to-avoid-leaving-ssh-sessions-open)
-
-
 $sudo apt-get update
-
 $sudo apt-get install apache2
 $sudo apt-get install git
 $sudo apt-get install screen  (screen bash ; ctrl a,d - run app in additional terminal)
 
 
 
-
-
 //Configure serial Interface ; disable console 
-
-
 $sudo nano /boot/cmdline.txt
 
-
 // change : dwc_otg.lpm_enable=0 rpitestmode=1 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait
-
 // to       dwc_otg.lpm_enable=0 rpitestmode=1                                              console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait
 
 
 
 $sudo nano /etc/inittab
-
 // comment out the following line:   2:23:respawn:/sbin/getty -L ttyAMA0 115200 vt100
-
-
 
 
 
@@ -70,9 +56,9 @@ $sudo nano /etc/inittab
 
 
 
-////////////////////////
-// ecpi sampe code //
-////////////////////////
+///////////////////////////
+// compile and run ecpi  //
+///////////////////////////
 
 //get ecpi source
 $mkdir projects
@@ -82,6 +68,7 @@ $git clone https://github.com/ffcrg/ecpi.git
 $cd ecpi
 
 //copy websource to var/www
+$chmod 777 cpwww.sh
 $./cpwww.sh 
 
 
@@ -92,9 +79,17 @@ $make -f mkfile
 //run App as root ; App writes to /var/www
 $screen bash
 $sudo ./ecpi
-<Ctrl a> d 
+<Ctrl a> d
 
-//reconnect
+//edit the csv File
+sudo nano /var/www/ecpi/data/ecpi.csv 
+
+//reconnect to ecpi
 $screen -r
 
 //close ssh session ; ecpi continues to run
+$exit
+
+//open website from your PC 
+//type in the IP Adress of your raspberry into the browser
+
