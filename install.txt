@@ -10,7 +10,7 @@ use Raspi-Config to
 	- configure_keyboards
 	- boot-behavior 	-> don't start desktop on boot
 
-//use a keyboard and monitor on your raspberry or connect from your PC with a SSH Client (http://www.putty.org/
+//use a keyboard and monitor on your raspberry or connect from your PC with a SSH Client (http://www.putty.org/)
 
 
 //add a new user and config the usage
@@ -49,10 +49,10 @@ $sudo nano /etc/inittab
 //the 4 wire cable of the EnergyCam can be connected to the Raspberry Pi expansion port
 
 // EnergyCam  	- Raspberry Pi
-// 	3V3	- 3V3 (Pin 1)
-// 	GND	- GND (Pin 6)
-//	RxD	- TxD (Pin 8)
-//	TxD	- RxD (Pin 10)
+// 3V3 (red)	- 3V3 (Pin 1)
+// GND (black) 	- GND (Pin 6)
+// RxD (green)	- TxD (Pin 8)
+// TxD (yellow)	- RxD (Pin 10)
 
 
 
@@ -91,5 +91,5 @@ $screen -r
 $exit
 
 //open website from your PC 
-//type in the IP Adress of your raspberry into the browser
+//type the IP Adress of your raspberry into the adress bar of the browser
 
