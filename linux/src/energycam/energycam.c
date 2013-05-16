@@ -271,7 +271,7 @@ int EnergyCam_Log2CSVFile(const char *path,	 uint32_t Int, uint16_t Frac)
 	if ( (hFile = fopen(path, "a")) != NULL ) {
 		  if(FileSize == 0)  //start a new file with Header
 				fprintf(hFile, "Date, Value \n");
-			fprintf(hFile,"%d-%02d-%02d %02d:%02d, %d\r\n",tm.tm_year+1900,tm.tm_mon+1,tm.tm_mday,tm.tm_hour,tm.tm_min, Int,Frac);
+			fprintf(hFile,"%d-%02d-%02d %02d:%02d, %d.%d\r\n",tm.tm_year+1900,tm.tm_mon+1,tm.tm_mday,tm.tm_hour,tm.tm_min, Int,Frac);
 			fclose(hFile);
 		}
 	else MODBUSERROR; 

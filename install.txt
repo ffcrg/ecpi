@@ -29,13 +29,13 @@ $sudo apt-get install screen  (screen bash ; ctrl a,d - run app in additional te
 //Configure serial Interface ; disable console 
 $sudo nano /boot/cmdline.txt
 
-// change : dwc_otg.lpm_enable=0 rpitestmode=1 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait
-// to       dwc_otg.lpm_enable=0 rpitestmode=1                                              console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait
+// change : dwc_otg.lpm_enable=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait
+// to       dwc_otg.lpm_enable=0                                              console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait
 
 
 
 $sudo nano /etc/inittab
-// comment out the following line:   2:23:respawn:/sbin/getty -L ttyAMA0 115200 vt100
+// comment out the last line:   T0:23:respawn:/sbin/getty -L ttyAMA0 115200 vt100
 
 
 
