@@ -118,7 +118,7 @@ int EnergyCam_GetManufacturerIdentification(uint16_t* pData){
       return MODBUSOK;
   }
   else {
-     fprintf(stderr,"EnergyCamHost_GetManufacturerIdentification  failed \r\n");
+     //fprintf(stderr,"EnergyCamHost_GetManufacturerIdentification  failed \r\n");
      return MODBUSERROR;
   }    
  return MODBUSERROR; 
@@ -161,9 +161,10 @@ int EnergyCam_GetResultOCRInstallation(uint16_t* pData) {
     readRegCnt = modbus_read_input_registers(m_ctx, MODBUS_GET_INTERNAL_ADDR_FROM_OFFICIAL(MODBUS_SLAVE_INPUTREG_MEMMAP_RESULTINSTALLATION), regCnt, &inputRegs[0]);
     if (readRegCnt != -1) {
         *pData = inputRegs[0];
+         
         return MODBUSOK;
     } else {
-	    fprintf(stderr,"EnergyCam_GetResultOCRInstallation  failed \r\n");
+	    //fprintf(stderr,"EnergyCam_GetResultOCRInstallation  failed \r\n");
         return MODBUSERROR;
     }    
   return MODBUSERROR; 
@@ -181,6 +182,22 @@ int EnergyCam_TriggerReading(void) {
     return MODBUSERROR;
     } else {
       fprintf(stdout, "TriggerReading \n");
+      return MODBUSOK;
+    }
+  return MODBUSERROR;     
+}
+
+int EnergyCam_TriggerInstallation(void) {
+    uint32_t wroteRegCnt;
+    const uint32_t regCnt = 2;
+    uint16_t holdingRegs[2] = {100,1};
+
+    wroteRegCnt = modbus_write_registers(m_ctx, MODBUS_GET_INTERNAL_ADDR_FROM_OFFICIAL(MODBUS_SLAVE_HOLDINGREG_MEMMAP_ACTIONOCRINSTALLATIONTO), regCnt, &holdingRegs[0]);
+    if (wroteRegCnt == -1) {
+        fprintf(stderr, "TriggerInstallation failed with '%s'\n", modbus_strerror(errno));
+    return MODBUSERROR;
+    } else {
+      fprintf(stdout, "TriggerInstallation \n");
       return MODBUSOK;
     }
   return MODBUSERROR;     
@@ -279,8 +296,26 @@ int EnergyCam_Log2CSVFile(const char *path,	 uint32_t Int, uint16_t Frac)
  return MODBUSOK; 
 }
 	
-	
 
+uint16_t DisplayInstallationStatus()
+{
+	uint16_t Data = 0;	
+	if (MODBUSOK == EnergyCam_GetResultOCRInstallation(&Data)) {
+       switch(Data){
+		   case INSTALLATION_FAILED:  	Colour(PRINTF_RED,false);printf("Installation failed");Colour(0,true);
+										break;
+		   case INSTALLATION_NODIGITS:
+		   case INSTALLATION_NOTDONE:   Colour(PRINTF_RED,false);printf("EnergyCAM not installed");Colour(0,true); 
+										break;
+		   case INSTALLATION_ONGOING:   Colour(PRINTF_YELLOW,false);printf("Installation ongoing");Colour(0,true);
+										break;
+		   default :    				Colour(PRINTF_GREEN,false);printf("Installed with %d digits",(Data >>8));Colour(0,true);
+										break;		
+		}
+	}
+	
+	return Data;
+}
 
 
 int getkey() {
@@ -392,6 +427,7 @@ int main(int argc, char *argv[])
 	uint32_t OCRData = 0;
 
 	int iRetry = 3;
+	int iTimeout = 0;
 
 	Intro(ReadingPeriod);
 	 
@@ -409,24 +445,52 @@ int main(int argc, char *argv[])
 	}while(MODBUSERROR == EnergyCam_GetManufacturerIdentification(&Data));
 
 	if(Data == SAIDENTIFIER) {
-	Colour(PRINTF_GREEN,false);
-	printf("EnergyCAM Sensor connected ");
-	Colour(0,true);
+		Colour(PRINTF_GREEN,false);
+		printf("EnergyCAM Sensor connected ");
+		Colour(0,true);
 	} else {
-	  ErrorAndExit("EnergyCAM not found ");
+		ErrorAndExit("EnergyCAM not found ");
 	}
-
-	//Is EnergyCam installed
-	if (MODBUSOK == EnergyCam_GetResultOCRInstallation(&Data)) {
-	  printf("Installation %04X \n",Data);
-	}
-	if(Data & 0xF000)  //0xFFFD = ongoing ; 0xFFFE = not done ; 0xFFFF = Error ; 0x0500 = installed with 5.0 digit
-		ErrorAndExit("EnergyCAM not installed ");
-		
-	//Read Buildnumber
+	
+		//Read Buildnumber
 	if (MODBUSOK == EnergyCam_GetAppFirmwareBuildNumber(&Build)) {
 	  printf("Build %d \n",Build);
 	}
+	
+	//Check Buildnumber, GetResultOCRInt requires Build 8374
+	if (Build < 8374) {
+	  ErrorAndExit("This App requires a Firmwareversion >= 8374. ");
+	}
+
+	//Is EnergyCam installed
+	Data = DisplayInstallationStatus();
+
+	//try to install the device if not installed
+	if((Data == INSTALLATION_NODIGITS) || (Data == INSTALLATION_NOTDONE)){
+		EnergyCam_TriggerInstallation();
+		usleep(2000*1000);   //sleep 2000ms - wait for Installation
+		printf("Installing ");
+		iTimeout = 20;
+		do {
+			usleep(500*1000);   //sleep 500ms
+			printf(".");
+			if (MODBUSERROR == EnergyCam_GetResultOCRInstallation(&Data)) {
+				Data = 0xFFFD; //retry if MODBUS returns with an Error
+			}
+		}
+		while((iTimeout-->0) && (Data == 0xFFFD));
+		printf("\n");
+		
+		//Is EnergyCam installed
+		Data = DisplayInstallationStatus();	
+	}
+	
+	if((Data == INSTALLATION_NODIGITS) || (Data == INSTALLATION_NOTDONE) || (Data == INSTALLATION_FAILED) || (Data == INSTALLATION_ONGOING)){
+		ErrorAndExit("EnergyCAM not installed ");
+	}	
+
+
+	
 
 	//get last Reading
 	if (MODBUSOK == EnergyCam_GetResultOCRInt(&OCRData,&Data)) {
