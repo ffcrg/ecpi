@@ -12,9 +12,11 @@ use Raspi-Config to
 
 //use a keyboard and monitor on your raspberry or connect from your PC with a SSH Client (http://www.putty.org/)
 
+//you should change the default password of the pi user
+$passwd
 
-//add a new user and config the usage
-$sudo adduser XXX
+//you can also add a new user and enable this user with sudo privileges
+$sudo adduser username
 $sudo nano /etc/group
 
 
@@ -68,7 +70,7 @@ $git clone https://github.com/ffcrg/ecpi.git
 $cd ecpi
 
 //copy websource to var/www
-$chmod 777 cpwww.sh
+$chmod u+x cpwww.sh
 $./cpwww.sh 
 
 
@@ -81,7 +83,7 @@ $screen bash
 $sudo ./ecpi
 <Ctrl a> d
 
-//edit the csv File
+//you can view the created csv File
 sudo nano /var/www/ecpi/data/ecpi.csv 
 
 //reconnect to ecpi
