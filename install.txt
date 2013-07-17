@@ -57,6 +57,15 @@ $sudo nano /etc/inittab
 // TxD (yellow)	- RxD (Pin 10)
 
 
+//the expansion port is mapped as /dev/ttyAMA0
+
+
+//you can also connect the EnergyCam with a USB Communication Box fom FAST
+//the USB port is mapped as /dev/ttyUSB0
+
+//the used port is defined in the function EnergyCamOpen()
+
+
 
 ///////////////////////////
 // compile and run ecpi  //
