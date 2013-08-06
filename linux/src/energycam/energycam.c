@@ -15,8 +15,8 @@
 #include "modbus.h"
 #include "energycampi.h"
 
-unsigned int m_dwPort = 0;
-unsigned int m_dwBaud = 115200;
+
+
 modbus_t* m_ctx = NULL;
 
 #ifndef TRUE
@@ -184,35 +184,32 @@ bool saIsImageValid(const tpsaImage pImage, saImageType_t expectedImageType, boo
 }
 
 //open serial port
-bool EnergyCamOpen(unsigned int dwPort) {
-    m_dwPort = dwPort;
+int EnergyCamOpen(unsigned int Connection, unsigned int dwPort, unsigned int Baud, unsigned int slave) {
     char comDeviceName[100];
     
-	//Expansion connector  
-    sprintf(comDeviceName, "/dev/ttyAMA%d", dwPort);   
 	
-	//connected via USB
-    //sprintf(comDeviceName, "/dev/ttyUSB%d", dwPort);
-    m_ctx = (modbus_t* )modbus_new_rtu(comDeviceName, m_dwBaud, 'E', 8, 1); // parity 'E'ven used by EnergyCam's freemodbus implementation
+	if(EXPANSIONPORT == Connection)
+			sprintf(comDeviceName, "/dev/ttyAMA%d", dwPort);  //Expansion connector  
+	else 
+			sprintf(comDeviceName, "/dev/ttyUSB%d", dwPort); //connected via USB
+				
+    m_ctx = (modbus_t* )modbus_new_rtu(comDeviceName, Baud, 'E', 8, 1); // parity 'E'ven used by EnergyCam's freemodbus implementation
     
     if(NULL == m_ctx)
-        return false;
+        return MODBUSERROR;
     
     modbus_set_debug( m_ctx, false);
-    modbus_set_slave( m_ctx, 1);
+    modbus_set_slave( m_ctx, slave);
     
     if (modbus_connect(m_ctx) == -1) {
         fprintf(stderr, "Connection failed: %s\n", modbus_strerror(errno));
         
         modbus_free(m_ctx);
         m_ctx = NULL;
-        return false; 
+        return MODBUSERROR; 
     } 
-  else{
-    printf,( "Connection OK: \n");
-  }
 
-    return true;
+    return MODBUSOK;
 }
 
 
@@ -243,7 +240,7 @@ int EnergyCam_GetManufacturerIdentification(uint16_t* pData) {
         return MODBUSOK;
   }
   else {
-     //fprintf(stderr,"EnergyCamHost_GetManufacturerIdentification  failed \r\n");
+        //fprintf(stderr,"EnergyCamHost_GetManufacturerIdentification  failed \r\n");
         return MODBUSERROR;
   }    
     return MODBUSERROR; 
@@ -353,16 +350,16 @@ int EnergyCam_UpdateMCU(char* file) {
 
         if (imageChunkStartAddr == 0) {
             modbus_set_response_timeout(m_ctx, &responseTimeoutEraseFlash);
-            fprintf(stderr, "modbus_set_response_timeout(%d s, %d ms)\n", responseTimeoutEraseFlash.tv_sec, responseTimeoutEraseFlash.tv_usec/1000);
+            fprintf(stderr, "modbus_set_response_timeout(%d s, %d ms)\n", (int)responseTimeoutEraseFlash.tv_sec, (int)responseTimeoutEraseFlash.tv_usec/1000);
         } else {
             struct timeval old_response_timeout;
             /* Save original timeout */
             modbus_get_response_timeout(m_ctx, &old_response_timeout);
             if (memcmp(&old_response_timeout, &responseTimeoutStandard, sizeof(struct timeval)) != 0) {
-                fprintf(stderr, "modbus_get_response_timeout() = %d s, %d ms\n", old_response_timeout.tv_sec, old_response_timeout.tv_usec/1000);
+                fprintf(stderr, "modbus_get_response_timeout() = %d s, %d ms\n", (int)old_response_timeout.tv_sec, (int)old_response_timeout.tv_usec/1000);
                 /* Define a new timeout! */
                 modbus_set_response_timeout(m_ctx, &responseTimeoutStandard);
-                fprintf(stderr, "modbus_set_response_timeout(%d s, %d ms)\n", responseTimeoutStandard.tv_sec, responseTimeoutStandard.tv_usec/1000);
+                fprintf(stderr, "modbus_set_response_timeout(%d s, %d ms)\n", (int)responseTimeoutStandard.tv_sec, (int)responseTimeoutStandard.tv_usec/1000);
             }
         }
 
@@ -433,7 +430,7 @@ int EnergyCam_GetAppFirmwareBuildNumber(uint32_t* pBuildNumber) {
         *pBuildNumber = tmp;
         return MODBUSOK;
     } else {
-        fprintf(stderr,"EnergyCam_GetAppFirmwareBuildNumber failed\n");
+        fprintf(stderr,"EnergyCam_GetAppFirmwareBuildNumber ..\n");
         return MODBUSERROR;
     }    
     return MODBUSERROR; 
@@ -455,7 +452,7 @@ int EnergyCam_GetAppFirmwareType(uint16_t* pFirmwareType) {
         *pFirmwareType = tmp;
         return MODBUSOK;
     } else {
-        fprintf(stderr,"EnergyCam_GetAppFirmwareType failed\n");
+        //fprintf(stderr,"EnergyCam_GetAppFirmwareType failed\n");
         return MODBUSERROR;
     }    
     return MODBUSERROR; 
@@ -500,6 +497,7 @@ int EnergyCam_TriggerReading(void) {
     return MODBUSERROR;     
 }
 
+//Trigger a Installation
 int EnergyCam_TriggerInstallation(void) {
     uint32_t wroteRegCnt;
     const uint32_t regCnt = 2;
@@ -530,7 +528,7 @@ int EnergyCam_GetStatusReading(uint16_t* pStatus) {
         *pStatus = inputRegs[0];
         return MODBUSOK;
     } else {
-        fprintf(stderr,"EnergyCam_GetStatusReading failed\n");
+        //fprintf(stderr,"EnergyCam_GetStatusReading failed\n");
         return MODBUSERROR;
     }    
     return MODBUSERROR; 
@@ -556,7 +554,7 @@ int EnergyCam_GetResultOCRInt( uint32_t* pInt, uint16_t* pFrac) {
         *pFrac = inputRegs[2];
         return MODBUSOK;
     } else {
-        fprintf(stderr,"EnergyCam_GetResultOCRInt failed\n");
+        //fprintf(stderr,"EnergyCam_GetResultOCRInt failed\n");
         return MODBUSERROR;
     }    
     return MODBUSERROR; 
@@ -611,20 +609,22 @@ int EnergyCam_Log2CSVFile(const char *path,  uint32_t Int, uint16_t Frac) {
     return MODBUSOK; 
 }
 
-uint16_t DisplayInstallationStatus(void) {
+uint16_t DisplayInstallationStatus(int infoflag) {
     uint16_t Data = 0;  
     if (MODBUSOK == EnergyCam_GetResultOCRInstallation(&Data)) {
-        switch(Data){
-        case INSTALLATION_FAILED:    Colour(PRINTF_RED,false);    printf("Installation failed");     Colour(0,true);
-                    break;
-        case INSTALLATION_NODIGITS:
-        case INSTALLATION_NOTDONE:   Colour(PRINTF_RED,false);    printf("EnergyCAM not installed"); Colour(0,true); 
-                    break;
-        case INSTALLATION_ONGOING:   Colour(PRINTF_YELLOW,false); printf("Installation ongoing");    Colour(0,true);
-                    break;
-        default:                     Colour(PRINTF_GREEN,false);  printf("Installed with %d digits",(Data >>8)); Colour(0,true);
-                    break;    
-        }
+		if(infoflag > 0){
+			switch(Data){
+			case INSTALLATION_FAILED:    Colour(PRINTF_RED,false);    printf("Installation failed");     Colour(0,true);
+						break;
+			case INSTALLATION_NODIGITS:
+			case INSTALLATION_NOTDONE:   Colour(PRINTF_RED,false);    printf("EnergyCAM not installed"); Colour(0,true); 
+						break;
+			case INSTALLATION_ONGOING:   Colour(PRINTF_YELLOW,false); printf("Installation ongoing");    Colour(0,true);
+						break;
+			default:                     Colour(PRINTF_GREEN,false);  printf("Installed with %d digits",(Data >>8)); Colour(0,true);
+						break;    
+			}
+    	}
     }    
     return Data;
 }
@@ -699,13 +699,38 @@ void Intro(int Read)
     
     Colour(0,true);
     printf("   Usage\n");
-    printf("   q   : Quit\n");
-    printf("   R   : Trigger OCR Reading\n");
-    printf("   r   : Read OCR Value\n");
-    printf("   U   : Update EnergyCam firmware\n");
-    printf("   Reading is triggered every %d minutes\n",Read); 
+    printf("   q   : quit\n");
+    printf("   R   : trigger OCR reading\n");
+    printf("   r   : read OCR value\n");
+    printf("   U   : update EnergyCam firmware\n");
+    printf("   The meter reading is stored every %d minutes\n",Read); 
     printf("   \n");         
 }
+
+
+void IntroShowParam(void)
+{
+    printf("   \n");
+    Colour(62,false); 
+    printf("############################################\n");
+    printf("## ecpi - EnergyCam on raspberry Pi/Weezy ##\n"); 
+    printf("############################################\n");
+    
+    Colour(0,true);
+    printf("   Commandline options:\n");
+    printf("   ./ecpi -c USB -p 0 -s 1 -i  \n");
+    printf("   -c USB : use USB connection\n");
+    printf("   -p 0 : Portnumber 0 -> /dev/ttyUSB0\n");
+    printf("   -s 1 : MODBUSSlaveAdress 1 \n\n");
+    printf("   -i   : show detailed infos \n\n");    
+    printf("   ./ecpi -c AMA -p 0 -s 1   \n");
+    printf("   -c AMA : use Expansionport\n");
+    printf("   -p 0 : Portnumber 0 -> /dev/ttyAMA0\n");
+    printf("   -s 1 : MODBUSSlaveAdress 1 \n");    
+    printf("   \n");         
+}
+
+
 
 
 void ErrorAndExit(const char *info) {
@@ -718,12 +743,12 @@ void ErrorAndExit(const char *info) {
     exit(0);
 }
 
-int check4Install(void) {
+int check4Install(int infoflag) {
     uint16_t Data     = 0;
     int      iTimeout = 0;
     
     //Is EnergyCam installed
-    Data = DisplayInstallationStatus();
+    Data = DisplayInstallationStatus(infoflag);
     
     //try to install the device if not installed
     if ((Data == INSTALLATION_NODIGITS) || (Data == INSTALLATION_NOTDONE)) {
@@ -740,12 +765,123 @@ int check4Install(void) {
         printf("\n");
         
         //Is EnergyCam installed
-        Data = DisplayInstallationStatus(); 
+        Data = DisplayInstallationStatus(infoflag); 
     }
     
     if ((Data == INSTALLATION_NODIGITS) || (Data == INSTALLATION_NOTDONE) || (Data == INSTALLATION_FAILED) || (Data == INSTALLATION_ONGOING))
-        ErrorAndExit("EnergyCAM not OCR installed\n");    
+        ErrorAndExit("EnergyCAM OCR not installed\n");    
 }
+
+//support commandline 
+int mainwithparam(int argc, char *argv[]) { 
+	int c;
+
+	unsigned int Connection = EXPANSIONPORT;
+	unsigned int Port = 0;
+	unsigned int Slave = DEFAULTSLAVEADRESS;
+	int infoflag = 0;
+	
+	int iRetry = 3; 
+    int iTimeout = 0;
+
+	uint16_t Data           = 0; 
+	uint32_t Build          = 0; 
+	uint16_t FirmwareType   = 0; 
+	uint32_t OCRData        = 0;
+       
+	opterr = 0;
+	while ((c = getopt (argc, argv, "c:hip:s:")) != -1){
+		switch (c){
+			case 'c':
+			case 'C':
+			 if (NULL != optarg){
+				 if(0 == strcmp("USB",optarg)) Connection=USBPORT;
+				 if(0 == strcmp("AMA",optarg)) Connection=EXPANSIONPORT;
+			 }
+			 break;
+			case 'i':
+				 infoflag = 1;
+				 break;             
+			case 'p':
+			case 'P':
+				 if (NULL != optarg){
+					 Port = atoi(optarg);
+				 }
+				 break;             
+			case 's':
+			case 'S':
+				 if (NULL != optarg){
+					 Slave = atoi(optarg);
+				 }
+				 break;        
+			case 'h':
+				IntroShowParam();
+				return (0);
+				break;                     
+			 
+			case '?':
+				 if (optopt == 'c')
+				   fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+				 else if (isprint (optopt))
+				   fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+				 else
+				   fprintf (stderr,"Unknown option character `\\x%x'.\n",optopt);
+				 return 1;
+			default:
+				abort ();
+		}
+	}
+
+    if(infoflag > 0) {		
+	  printf("Connecting to /dev/tty%s%d Slaveaddress %d\n",(Connection==USBPORT) ? "USB" : "AMA",Port,Slave);
+	}       
+     
+	if(MODBUSOK == EnergyCamOpen(Connection,Port,MODBUSBAUDRATE,Slave)){  //open serial port
+	 
+		//check EC device
+		iRetry = 3; 
+		do { 
+			if(iRetry-- < 0) 
+				break; 
+		} while(MODBUSERROR == EnergyCam_GetManufacturerIdentification(&Data));
+
+		if(Data == SAIDENTIFIER) {
+			if(infoflag > 0) {			
+				Colour(PRINTF_GREEN, false); 
+				printf("EnergyCAM Sensor connected "); 
+				Colour(0, true); 
+				//Read Buildnumber   
+				if (MODBUSOK == EnergyCam_GetAppFirmwareBuildNumber(&Build))
+					printf("Build %d\n", Build); 
+					 
+				//Read FirmwareType 
+				if (MODBUSOK == EnergyCam_GetAppFirmwareType(&FirmwareType))
+					printf("FirmwareType %d\n", FirmwareType);         
+			}
+				
+			check4Install(infoflag);
+			
+			//get last Reading 
+			if (MODBUSOK == EnergyCam_GetResultOCRInt(&OCRData,&Data)) { 
+				time_t t     = time(NULL); 
+				struct tm tm = *localtime(&t);
+
+				//Output to screen to grab in shell
+				printf("%04d.%d\n",OCRData, Data); 
+			}
+						
+		} else
+			ErrorAndExit("EnergyCAM not found "); 
+		 
+		 EnergyCamClose();
+ }
+	
+	
+
+
+return(0);
+}
+
 
 //////////////////////////////////////////////
 int main(int argc, char *argv[]) { 
@@ -756,160 +892,171 @@ int main(int argc, char *argv[]) {
     int  iReadRequest  = 0;
     int  ReadingPeriod = 10; 
     int  ReadingTimer  = ReadingPeriod+1;
+
     int iRetry = 3; 
     int iTimeout = 0;
+    int Connection = EXPANSIONPORT;
+    char cCurrentPath[FILENAME_MAX];
     
     uint16_t Data           = 0; 
     uint32_t Build          = 0; 
     uint16_t FirmwareType   = 0; 
     uint32_t OCRData        = 0;
     
-    Intro(ReadingPeriod);
-    
-    if (wiringPiSetup () == -1) {     
-        fprintf (stderr, "Not running on raspberry pi - now ending\n"); 
-        exit(0); 
-    }
-    
-    EnergyCamOpen(0);  //open serial port
-    
-    //get Status & wakeup 
-    iRetry = 3; 
-    do { 
-        if(iRetry-- < 0) 
-            break; 
-    } while(MODBUSERROR == EnergyCam_GetManufacturerIdentification(&Data));
+    if(argc > 1)
+      mainwithparam(argc,argv);
+    else
+    {
+		
+		
+		getcwd(cCurrentPath, sizeof(cCurrentPath));
+		Intro(ReadingPeriod);
+		
+		if (( EXPANSIONPORT == Connection) &&  (wiringPiSetup () == -1)) {     
+			fprintf (stderr, "Not running on raspberry pi - now ending\n"); 
+			exit(0); 
+		}
+		
+		EnergyCamOpen(Connection,0,MODBUSBAUDRATE,DEFAULTSLAVEADRESS);  //open serial port
+		
+		//get Status & wakeup 
+		iRetry = 3; 
+		do { 
+			if(iRetry-- < 0) 
+				break; 
+		} while(MODBUSERROR == EnergyCam_GetManufacturerIdentification(&Data));
 
-    if(Data == SAIDENTIFIER) {
-        Colour(PRINTF_GREEN, false); 
-        printf("EnergyCAM Sensor connected "); 
-        Colour(0, true); 
-    } else
-        ErrorAndExit("EnergyCAM not found "); 
-        
+		if(Data == SAIDENTIFIER) {
+			Colour(PRINTF_GREEN, false); 
+			printf("EnergyCAM Sensor connected "); 
+			Colour(0, true); 
+		} else
+			ErrorAndExit("EnergyCAM not found "); 
+			
 
-    //Read Buildnumber   
-    if (MODBUSOK == EnergyCam_GetAppFirmwareBuildNumber(&Build))
-        printf("Build %d\n", Build); 
-         
-    //Read FirmwareType 
-    if (MODBUSOK == EnergyCam_GetAppFirmwareType(&FirmwareType))
-        printf("FirmwareType %d\n", FirmwareType);         
+		//Read Buildnumber   
+		if (MODBUSOK == EnergyCam_GetAppFirmwareBuildNumber(&Build))
+			printf("Build %d\n", Build); 
+			 
+		//Read FirmwareType 
+		if (MODBUSOK == EnergyCam_GetAppFirmwareType(&FirmwareType))
+			printf("FirmwareType %d\n", FirmwareType);         
 
-    //Check Buildnumber, GetResultOCRInt requires Build 8374   
-    if (Build < 8374) 
-        ErrorAndExit("This App requires a Firmwareversion >= 8374. ");    
+		//Check Buildnumber, GetResultOCRInt requires Build 8374   
+		if (Build < 8374) 
+			ErrorAndExit("This App requires a Firmwareversion >= 8374. ");    
 
-    check4Install();
+		check4Install(true);
 
-    //get last Reading 
-    if (MODBUSOK == EnergyCam_GetResultOCRInt(&OCRData,&Data)) { 
-        time_t t     = time(NULL); 
-        struct tm tm = *localtime(&t);
+		//get last Reading 
+		if (MODBUSOK == EnergyCam_GetResultOCRInt(&OCRData,&Data)) { 
+			time_t t     = time(NULL); 
+			struct tm tm = *localtime(&t);
 
-        printf("(%02d:%02d:%02d) Reading %04d.%d\n", tm.tm_hour, tm.tm_min, tm.tm_sec, OCRData, Data); 
-        EnergyCam_Log2CSVFile("/var/www/ecpi/data/ecpi.csv", OCRData, Data); 
-    }
+			printf("(%02d:%02d:%02d) Reading %04d.%d\n", tm.tm_hour, tm.tm_min, tm.tm_sec, OCRData, Data); 
+			EnergyCam_Log2CSVFile("/var/www/ecpi/data/ecpi.csv", OCRData, Data); 
+		}
 
-    IsNewMinute();   
-    ReadingTimer = ReadingPeriod + 1;
-    
-    while (!((key == 0x1B) || (key == 'q'))) {
-        usleep(500*1000);   //sleep 500ms
-          
-        key = getkey();
-        
-        if(key == 'r')   
-            iReadRequest++; //Read now        
-        
-        if(key == 'R')   {
-            ReadingTimer = 1;  //read in 1 minute
-            
-            //get Status & wakeup
-            iRetry = 3;
-            do {
-                if (iRetry-- < 0 ) 
-                    break;
-            } while (MODBUSERROR == EnergyCam_GetStatusReading(&Data));
-            printf("GetStatusReading %04X \n", Data);  
-            
-            //trigger new reading
-            EnergyCam_TriggerReading();     
-        }     
-        
-        if(key == 'U') {
-            char binaryFileName[1024];
-            
-            //wakeup
-            iRetry = 3;
-            do {
-                if(iRetry-- < 0)
-                    break;
-            } while (MODBUSERROR == EnergyCam_GetManufacturerIdentification(&Data));
-            
-            //
-            sprintf(binaryFileName,"sensorT2.bin");
-            if(file_exist(binaryFileName)){
-				printf("Using: %s \n ",binaryFileName); 
-			}else{				
-				printf("Enter binaryFileName: "); 
-				gets(binaryFileName);
-				printf("binaryFileName >%s<\n", binaryFileName);
-			}	
-              
-            if (EnergyCam_UpdateMCU(binaryFileName) == MODBUSOK) {
-                printf("transfer of firmware update succeeded, wait until EC reboots and firmware update installs\n");
-                
-                //wait for update being installed
-                iRetry = 60;
-                do {
-                    if (iRetry-- < 0) 
-                        break;
-                    usleep(500*1000);   //sleep 500ms
-                } while(MODBUSERROR == EnergyCam_GetAppFirmwareBuildNumber(&Build));
-                printf("Build %d\n",Build);
-                
-                if (MODBUSOK == EnergyCam_GetAppFirmwareType(&FirmwareType))
-                    printf("FirmwareType %d\n", FirmwareType);
-                
-                check4Install();
-            } else
-                fprintf(stderr, "firmware update failed\n");
-        }     
-                
-        if (IsNewMinute()){
-            if (--ReadingTimer <= 1)
-                iReadRequest++;
-            printf("%02d ", ReadingTimer);
-        }
-        
-        if (iReadRequest > 0) {
-            iReadRequest = 0;
-            printf("%02d \n",ReadingTimer); 
-            ReadingTimer = ReadingPeriod+1;
-            
-            //get Status & wakeup
-            iRetry = 3;
-            do {
-                if (iRetry-- < 0) 
-                    break;
-            } while (MODBUSERROR == EnergyCam_GetStatusReading(&Data));
-            printf("GetStatusReading %04X \n", Data);
-            
-            EnergyCam_GetOCRPicDone(&Data);
-            printf("Pictures %04d\n", Data);
-            
-            if (MODBUSOK == EnergyCam_GetResultOCRInt(&OCRData, &Data)) {
-                time_t t = time(NULL);
-                struct tm tm = *localtime(&t);
-                      
-                printf("(%02d:%02d:%02d) Reading %04d.%d\n", tm.tm_hour, tm.tm_min, tm.tm_sec, OCRData, Data);
-                EnergyCam_Log2CSVFile("/var/www/ecpi/data/ecpi.csv", OCRData, Data);
-            } 
-        }        
-    } // end while
-    
-    EnergyCamClose();
+		IsNewMinute();   
+		ReadingTimer = ReadingPeriod + 1;
+		
+		while (!((key == 0x1B) || (key == 'q'))) {
+			usleep(500*1000);   //sleep 500ms
+			  
+			key = getkey();
+			
+			if(key == 'r')   
+				iReadRequest++; //Read now        
+			
+			if(key == 'R')   {
+				ReadingTimer = 1;  //read in 1 minute
+				
+				//get Status & wakeup
+				iRetry = 3;
+				do {
+					if (iRetry-- < 0 ) 
+						break;
+				} while (MODBUSERROR == EnergyCam_GetStatusReading(&Data));
+				printf("GetStatusReading %04X \n", Data);  
+				
+				//trigger new reading
+				EnergyCam_TriggerReading();     
+			}     
+			
+			if(key == 'U') {
+				char binaryFileName[1024];
+				
+				//wakeup
+				iRetry = 3;
+				do {
+					if(iRetry-- < 0)
+						break;
+				} while (MODBUSERROR == EnergyCam_GetManufacturerIdentification(&Data));
+				
+				//
+				sprintf(binaryFileName,"sensorT2.bin");
+				if(file_exist(binaryFileName)){
+					printf("Using: %s \n ",binaryFileName); 
+				}else{				
+					printf("Enter binaryFileName: "); 
+					gets(binaryFileName);
+					printf("binaryFileName >%s<\n", binaryFileName);
+				}	
+				  
+				if (EnergyCam_UpdateMCU(binaryFileName) == MODBUSOK) {
+					printf("transfer of firmware update succeeded, wait until EC reboots and firmware update installs\n");
+					
+					//wait for update being installed
+					iRetry = 60;
+					do {
+						if (iRetry-- < 0) 
+							break;
+						usleep(500*1000);   //sleep 500ms
+					} while(MODBUSERROR == EnergyCam_GetAppFirmwareBuildNumber(&Build));
+					printf("Build %d\n",Build);
+					
+					if (MODBUSOK == EnergyCam_GetAppFirmwareType(&FirmwareType))
+						printf("FirmwareType %d\n", FirmwareType);
+					
+					check4Install(true);
+				} else
+					fprintf(stderr, "firmware update failed\n");
+			}     
+					
+			if (IsNewMinute()){
+				if (--ReadingTimer <= 1)
+					iReadRequest++;
+				printf("%02d ", ReadingTimer);
+			}
+			
+			if (iReadRequest > 0) {
+				iReadRequest = 0;
+				printf(" \n"); 
+				ReadingTimer = ReadingPeriod+1;
+				
+				//get Status & wakeup
+				iRetry = 3;
+				do {
+					if (iRetry-- < 0) 
+						break;
+				} while (MODBUSERROR == EnergyCam_GetStatusReading(&Data));
+				printf("GetStatusReading %04X \n", Data);
+				
+				EnergyCam_GetOCRPicDone(&Data);
+				printf("Pictures %04d\n", Data);
+				
+				if (MODBUSOK == EnergyCam_GetResultOCRInt(&OCRData, &Data)) {
+					time_t t = time(NULL);
+					struct tm tm = *localtime(&t);
+						  
+					printf("(%02d:%02d:%02d) Reading %04d.%d\n", tm.tm_hour, tm.tm_min, tm.tm_sec, OCRData, Data);
+					EnergyCam_Log2CSVFile("/var/www/ecpi/data/ecpi.csv", OCRData, Data);
+				} 
+			}        
+		} // end while
+		
+		EnergyCamClose();
+	}
     
     return 0;
 }

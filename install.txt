@@ -60,10 +60,16 @@ $sudo nano /etc/inittab
 //the expansion port is mapped as /dev/ttyAMA0
 
 
+
 //you can also connect the EnergyCam with a USB Communication Box fom FAST
 //the USB port is mapped as /dev/ttyUSB0
 
-//the used port is defined in the function EnergyCamOpen()
+
+
+//the used port is defined in the function main()
+//Connection = EXPANSIONPORT;
+//or
+//Connection = USBPORT;
 
 
 
@@ -87,7 +93,10 @@ $./cpwww.sh
 $cd linux/bin
 $make -f mkfile
 
-//run App as root ; App writes to /var/www
+
+/////////////////////////////////////////////////////////
+// run App as root ; App writes a csv file to /var/www //
+/////////////////////////////////////////////////////////
 $screen bash
 $sudo ./ecpi
 <Ctrl a> d
@@ -104,3 +113,21 @@ $exit
 //open website from your PC 
 //type the IP Adress of your raspberry into the adress bar of the browser
 
+
+//////////////////////////////////////
+// run App with commandline options //
+//////////////////////////////////////
+$./ecpi -c USB -p 0 -s 1 -i
+
+-c USB : use USB connection
+-p 0 : Portnumber 0 -> /dev/ttyUSB0
+-s 1 : MODBUSSlaveAdress 1
+-i   : show detailed infos
+
+$./ecpi -c AMA -p 0 -s 1
+-c AMA : use Expansionport
+-p 0 : Portnumber 0 -> /dev/ttyAMA0
+-s 1 : MODBUSSlaveAdress 1
+-i   : show detailed infos
+
+The app writes the actual meter reading to the console.

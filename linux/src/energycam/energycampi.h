@@ -46,9 +46,17 @@ typedef union _tModbusUpdateChunk_ {
 
 //---------------------------------------------------------
 
-#define SAIDENTIFIER  0x18C4
-#define MODBUSERROR   (-1)
-#define MODBUSOK      0
+#define SAIDENTIFIER  		0x18C4
+#define UNKNOWNPORT			0x00
+#define USBPORT           	0x01
+#define EXPANSIONPORT       0x02
+
+#define MODBUSBAUDRATE      115200
+#define DEFAULTSLAVEADRESS  1
+
+
+#define MODBUSERROR   		(-1)
+#define MODBUSOK      		0
 
 //Installation Status
 #define INSTALLATION_FAILED  0xFFFF
