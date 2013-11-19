@@ -57,20 +57,13 @@ $sudo nano /etc/inittab
 // TxD (yellow)	- RxD (Pin 10)
 
 
-//the expansion port is mapped as /dev/ttyAMA0
-
+//the expansion port is mapped as /dev/ttyAMA0 ; you have to use the commandine option -c AMA
+$ ./ecpi -c AMA
 
 
 //you can also connect the EnergyCam with a USB Communication Box fom FAST
 //the USB port is mapped as /dev/ttyUSB0
-
-
-
-//the used port is defined in the function main()
-//Connection = EXPANSIONPORT;
-//or
-//Connection = USBPORT;
-
+$ ./ecpi -c USB -p 0
 
 
 ///////////////////////////
@@ -94,12 +87,13 @@ $cd linux/bin
 $make -f mkfile
 
 
-/////////////////////////////////////////////////////////
-// run App as root ; App writes a csv file to /var/www //
-/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+// run App as root ; App writes per default a csv file to /var/www //
+////////////////////////////////////////////////////////////////////
 $screen bash
 $sudo ./ecpi
-<Ctrl a> d
+Press <Ctrl a> <d> brings you back to the terminal.
+
 
 //you can view the created csv File
 sudo nano /var/www/ecpi/data/ecpi.csv 
@@ -114,20 +108,68 @@ $exit
 //type the IP Adress of your raspberry into the adress bar of the browser
 
 
-//////////////////////////////////////
-// run App with commandline options //
-//////////////////////////////////////
-$./ecpi -c USB -p 0 -s 1 -i
+//////////////////////////
+//  commandline options //
+//////////////////////////
+$./ecpi -c USB -p 0 -s 1 -l VZ -i 
 
 -c USB : use USB connection
 -p 0 : Portnumber 0 -> /dev/ttyUSB0
 -s 1 : MODBUSSlaveAdress 1
+-l VZ : log to (VZ)Volkszähler, (XML) XMLFile, (CSV) CSV File
+-o 1  : (1) -> single run, (loop) -> continuous run\n\n");   
 -i   : show detailed infos
 
-$./ecpi -c AMA -p 0 -s 1
+
+$./ecpi -c AMA -p 0 -s 1 -o 1
 -c AMA : use Expansionport
 -p 0 : Portnumber 0 -> /dev/ttyAMA0
 -s 1 : MODBUSSlaveAdress 1
+-o 1 : single run
 -i   : show detailed infos
 
-The app writes the actual meter reading to the console.
+single run -> The app writes the actual meter reading to the console.
+
+
+////////////////////////////////
+// -l VZ : log to Volkszähler //
+////////////////////////////////
+
+// to install volkszähler
+//see http://wiki.volkszaehler.org/software/middleware/installation
+
+
+////////////////////////////
+// connect to volkszähler //
+////////////////////////////
+
+//see: http://wiki.volkszaehler.org/software/clients/vzclient
+
+//Install vzclient 
+$wget https://raw.github.com/volkszaehler/volkszaehler.org/master/misc/tools/vzclient
+$sudo cp vzclient /usr/local/bin/vzclient
+$sudo chmod 555 /usr/local/bin/vzclient
+
+
+//config /etc/vzclient.conf ; you have to enter the IP adress of your volkszähler PC
+$sudo nano /etc/vzclient.conf
+[default]
+url:http://192.168.0.110/middleware.php
+
+
+//create new channel in the UI
+-  Add Channel
+	  Typ: Stromzaehler
+	  Auflösung: 1000
+	  Preis: 0.00028
+- press info button in the UI
+	  copy UUID-String
+	  enter UUID-String into ecpi/linux/bin/add2zv.sh
+	  vzclient -u <UUID> add data value=$1
+		  
+
+
+
+
+
+
