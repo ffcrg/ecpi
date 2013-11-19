@@ -1,6 +1,50 @@
 #ifndef ENERGYCAMPI_H
 #define ENERGYCAMPI_H
 
+
+//multiplatform
+#ifndef TRUE
+  #define TRUE  (1==1)
+  #define FALSE (1==2)
+#endif
+
+#ifndef max
+  #define max(x,y) ((x>y) ? x:y)
+  #define min(x,y) ((x>y) ? y:x)
+#endif 
+
+#define _MAX_PATH 275
+
+//Resolution
+#define XSIZE     320
+#define YSIZE     80
+
+//Logging modes
+#define LOGTOCSV 0
+#define LOGTOVZ  1
+#define LOGTOXML 2
+
+//Operation modes
+#define LOOPOPERATION 0
+#define SINGLERUN 1
+
+//show Information
+#define SILENTMODE 0
+#define SHOWDETAILS 1
+#define SHOWALLDETAILS 2
+
+//colorcoding
+#define PRINTF_BRIGHT  1
+#define PRINTF_BLACK   0
+#define PRINTF_RED     1
+#define PRINTF_GREEN   2
+#define PRINTF_YELLOW  3
+#define PRINTF_BLUE    4
+#define PRINTF_MAGENTA 5
+#define PRINTF_CYAN    6
+#define PRINTF_WHITE   7
+
+
 #define SA_IMG_TYPE_APP_SENSOR              0x0100
 #define SA_IMAGE_HEADER_MAGIC               0xFA51BEAF
 
@@ -64,6 +108,13 @@ typedef union _tModbusUpdateChunk_ {
 #define INSTALLATION_ONGOING 0xFFFD
 #define INSTALLATION_NODIGITS 0x0000
 
+//OCR Status
+#define OCR_FAILED  0xFFFF
+#define OCR_NOTDONE 0xFFFE
+#define OCR_ONGOING 0xFFFD
+#define OCR_NODIGITS 0x0000
+
+
 #define MODBUS_GET_OFFICAL_ADDR_FROM_INTERNAL(addr)               ((addr)+1)
 #define MODBUS_GET_INTERNAL_ADDR_FROM_OFFICIAL(addr)              ((addr)-1)
 
@@ -91,6 +142,8 @@ typedef union _tModbusUpdateChunk_ {
 
 #define MODBUS_COMMON_INPUTREG_VIRTUAL_FIRST                      0x8000    
 #define MODBUS_COMMON_INPUTREG_VIRTUAL_UPDATECRCOK                (MODBUS_COMMON_INPUTREG_VIRTUAL_FIRST)
+#define MODBUS_COMMON_INPUTREG_VIRTUAL_IMAGEREADFIRST             (MODBUS_COMMON_INPUTREG_VIRTUAL_UPDATECRCOK + 1)
+#define MODBUS_COMMON_INPUTREG_VIRTUAL_IMAGEREADLAST              (MODBUS_COMMON_INPUTREG_VIRTUAL_IMAGEREADFIRST+MODBUS_MAXDATACHUNK_UINT16_CNT)
 
 //HOLDING REGISTER
 #define MODBUS_COMMON_HOLDINGREG_MEMMAP_FIRST                     0x0001
@@ -102,8 +155,13 @@ typedef union _tModbusUpdateChunk_ {
 #define MODBUS_SLAVE_HOLDINGREG_MEMMAP_ACTIONOCRINSTALLATIONTO    ((MODBUS_SLAVE_HOLDINGREG_MEMMAP_FIRST) +  0)  
 #define MODBUS_SLAVE_HOLDINGREG_MEMMAP_ACTIONOCRINSTALLATION      ((MODBUS_SLAVE_HOLDINGREG_MEMMAP_FIRST) +  1)  
 #define MODBUS_SLAVE_HOLDINGREG_MEMMAP_ACTIONOCR                  ((MODBUS_SLAVE_HOLDINGREG_MEMMAP_FIRST) +  2)  
+#define MODBUS_SLAVE_HOLDINGREG_MEMMAP_ACTIONBMP                  ((MODBUS_SLAVE_HOLDINGREG_MEMMAP_FIRST) +  8)  
+
 
 #define  MODBUS_COMMON_HOLDINGREG_VIRTUAL_FIRST                   0x8000     
 #define  MODBUS_COMMON_HOLDINGREG_VIRTUAL_UPDATECHUNKSTREAM       (MODBUS_COMMON_HOLDINGREG_VIRTUAL_FIRST)
+
+#define MODBUS_MAXDATACHUNK_UINT16_CNT 123
+#define BMP_IMAGE_DATA_BYTE_CNT (MODBUS_MAXDATACHUNK_UINT16_CNT*2 )
 
 #endif
