@@ -19,7 +19,6 @@
 
 
 
-
  int32_t getFileLength(char* f) {
     FILE *fp;
     if ((fp = fopen(f, ("rb"))) == NULL) {
@@ -46,7 +45,7 @@
         int32_t readBytes = 0;
 
         fseek(fp, 0, 0);
-        
+
         while ((readBytes = fread(&buf[indx], 1, 1, fp)) == 1 && indx < len) {
             indx += readBytes;
         }
@@ -129,7 +128,7 @@ bool saIsImageHeaderValid(const tpsaImageHeader pImageHeader, saImageType_t expe
 
     if (!typeOK)
   	    fprintf(stderr, "img type wrong 0x%04X != 0x%04X\n", pImageHeader->imageType, expectedImageType);
-    
+
     return magicOK && typeOK;
 }
 
@@ -153,28 +152,28 @@ bool saIsImageValid(const tpsaImage pImage, saImageType_t expectedImageType, boo
 //open serial port
 int EnergyCamOpen(modbus_t** ctx,unsigned int Connection, unsigned int dwPort, unsigned int Baud, unsigned int slave) {
     char comDeviceName[100];
-    
-	
+
+
 	if(EXPANSIONPORT == Connection)
-			sprintf(comDeviceName, "/dev/ttyAMA%d", dwPort);  //Expansion connector  
-	else 
+			sprintf(comDeviceName, "/dev/ttyAMA%d", dwPort);  //Expansion connector
+	else
 			sprintf(comDeviceName, "/dev/ttyUSB%d", dwPort); //connected via USB
-				
+
     *ctx = (modbus_t* )modbus_new_rtu(comDeviceName, Baud, 'E', 8, 1); // parity 'E'ven used by EnergyCam's freemodbus implementation
-    
+
     if(NULL == *ctx)
         return MODBUSERROR;
-    
+
     modbus_set_debug( *ctx, false);
     modbus_set_slave( *ctx, slave);
-    
+
     if (modbus_connect(*ctx) == -1) {
         fprintf(stderr, "Connection failed: %s\n", modbus_strerror(errno));
-        
+
         modbus_free(*ctx);
         *ctx = NULL;
-        return MODBUSERROR; 
-    } 
+        return MODBUSERROR;
+    }
 
     return MODBUSOK;
 }
@@ -187,20 +186,20 @@ bool EnergyCamClose(modbus_t** ctx) {
         modbus_free(*ctx);
         *ctx = NULL;
     }
-    return true;    
+    return true;
 }
 
 
 //read manufacture ID
 int EnergyCam_GetManufacturerIdentification(modbus_t* ctx, uint16_t* pData) {
     uint32_t readRegCnt;
-    
+
     const uint32_t regCnt = 1;
     uint16_t inputRegs[regCnt];
-    
-    if(NULL == pData) 
+
+    if(NULL == pData)
         return MODBUSERROR;
-    
+
     readRegCnt = modbus_read_input_registers(ctx, MODBUS_GET_INTERNAL_ADDR_FROM_OFFICIAL(MODBUS_COMMON_INPUTREG_MEMMAP_MANUFACTURERIDENTIFICATION), regCnt, &inputRegs[0]);
     if (readRegCnt != -1) {
         *pData= inputRegs[0];
@@ -209,9 +208,9 @@ int EnergyCam_GetManufacturerIdentification(modbus_t* ctx, uint16_t* pData) {
   else {
         //fprintf(stderr,"EnergyCamHost_GetManufacturerIdentification  failed \r\n");
         return MODBUSERROR;
-  }    
-    return MODBUSERROR; 
-} 
+  }
+    return MODBUSERROR;
+}
 
 //read Buildnumber of Firmware
 int EnergyCam_GetAppFirmwareBuildNumber(modbus_t* ctx,uint32_t* pBuildNumber,uint16_t InfoFlag) {
@@ -219,7 +218,7 @@ int EnergyCam_GetAppFirmwareBuildNumber(modbus_t* ctx,uint32_t* pBuildNumber,uin
     const uint32_t regCnt = 2;
     uint16_t inputRegs[regCnt];
 
-    if(NULL == pBuildNumber) 
+    if(NULL == pBuildNumber)
         return MODBUSERROR;
 
     readRegCnt = modbus_read_input_registers(ctx, MODBUS_GET_INTERNAL_ADDR_FROM_OFFICIAL(MODBUS_COMMON_INPUTREG_MEMMAP_APPBUILDNUMBER1), regCnt, &inputRegs[0]);
@@ -232,8 +231,8 @@ int EnergyCam_GetAppFirmwareBuildNumber(modbus_t* ctx,uint32_t* pBuildNumber,uin
     } else {
         if(InfoFlag > SILENTMODE) fprintf(stderr,"EnergyCam_GetAppFirmwareBuildNumber ..\n");
         return MODBUSERROR;
-    }    
-    return MODBUSERROR; 
+    }
+    return MODBUSERROR;
 }
 
 //update firmware
@@ -244,7 +243,7 @@ int EnergyCam_UpdateMCU(modbus_t* ctx,char* file,uint16_t InfoFlag) {
     tpsaImage       pImage     = (tpsaImage)malloc(length);
     uint32_t        imageChunkStartAddr;        // includes the image header in case of precedingHeader == ENERGYCAMHOST_UPDATEMCU_MODE_PRECEDINGHEADER
     uint32_t        imageBytes2Write;
-    uint32_t        imageBytes2WriteLast;    
+    uint32_t        imageBytes2WriteLast;
     uint32_t        curRegs2Write;
     tpsaImageHeader pImageHdr     = NULL;
     uint32_t        imageReadAddr = 0;
@@ -256,11 +255,11 @@ int EnergyCam_UpdateMCU(modbus_t* ctx,char* file,uint16_t InfoFlag) {
     uint32_t        updBuild        = 0;
     uint16_t        updFirmwareType = 0;
     uint32_t        iRetry;
-    
+
     struct timeval responseTimeoutStandard   = {0, (500*1000)};
     struct timeval responseTimeoutEraseFlash = {10, 0};             // on write of very first update image chunk which lead to a flash erase on EnergyCam which last long
 
-    
+
     #define CHUNK_WRITE_TRY_COUNT 10
 
     if (pImage == NULL) {
@@ -286,18 +285,18 @@ int EnergyCam_UpdateMCU(modbus_t* ctx,char* file,uint16_t InfoFlag) {
     do {
         if(iRetry-- < 0) break;
     } while(MODBUSERROR == EnergyCam_GetAppFirmwareBuildNumber(ctx,&curBuild,InfoFlag));
-  
+
     if (iRetry && MODBUSOK == EnergyCam_GetAppFirmwareType(ctx,&curFirmwareType)) {
         if(InfoFlag > SILENTMODE)  printf("Current: Build %d, firmwareType %d\n", curBuild, curFirmwareType);
     } else {
         fprintf(stderr, "Retrieving of properties of current app failed\n");
         return MODBUSERROR;
     }
-    
+
     updBuild        = pImageHdr->version;
     updFirmwareType = pImageHdr->firmwareType;
     if(InfoFlag > SILENTMODE) printf("Update : Build %d, firmwareType %d\n", updBuild, updFirmwareType);
-    
+
     if (updBuild > curBuild || (updBuild >= curBuild && curFirmwareType != updFirmwareType)) {
         if(InfoFlag > SILENTMODE) printf("Starting update...\n");
     } else {
@@ -338,23 +337,23 @@ int EnergyCam_UpdateMCU(modbus_t* ctx,char* file,uint16_t InfoFlag) {
             uint16_t data = 0;
 
             data  = ((uint16_t)*(pImageAsBytes+imageReadAddr+reg*2+1)) << 8;                // construct a uint16_t in host byte order (little endian)
-            data |= ((uint16_t)*(pImageAsBytes+imageReadAddr+reg*2+0));            
+            data |= ((uint16_t)*(pImageAsBytes+imageReadAddr+reg*2+0));
 
             modbusUpdateChunk.logical.imageData[reg] = data;                                // modbus_write_registers() is converting internally to big endian, so keep them here in host byte order
         }
 
         if (imageChunkStartAddr == 0) {
             modbus_set_response_timeout(ctx, &responseTimeoutEraseFlash);
-            fprintf(stderr, "modbus_set_response_timeout(%d s, %d ms)\n", (int)responseTimeoutEraseFlash.tv_sec, (int)responseTimeoutEraseFlash.tv_usec/1000);
+            if(InfoFlag > SILENTMODE) fprintf(stderr, "modbus_set_response_timeout(%d s, %d ms)\n", (int)responseTimeoutEraseFlash.tv_sec, (int)responseTimeoutEraseFlash.tv_usec/1000);
         } else {
             struct timeval old_response_timeout;
             /* Save original timeout */
             modbus_get_response_timeout(ctx, &old_response_timeout);
             if (memcmp(&old_response_timeout, &responseTimeoutStandard, sizeof(struct timeval)) != 0) {
-                fprintf(stderr, "modbus_get_response_timeout() = %d s, %d ms\n", (int)old_response_timeout.tv_sec, (int)old_response_timeout.tv_usec/1000);
+                if(InfoFlag > SILENTMODE) fprintf(stderr, "modbus_get_response_timeout() = %d s, %d ms\n", (int)old_response_timeout.tv_sec, (int)old_response_timeout.tv_usec/1000);
                 /* Define a new timeout! */
                 modbus_set_response_timeout(ctx, &responseTimeoutStandard);
-                fprintf(stderr, "modbus_set_response_timeout(%d s, %d ms)\n", (int)responseTimeoutStandard.tv_sec, (int)responseTimeoutStandard.tv_usec/1000);
+                if(InfoFlag > SILENTMODE) fprintf(stderr, "modbus_set_response_timeout(%d s, %d ms)\n", (int)responseTimeoutStandard.tv_sec, (int)responseTimeoutStandard.tv_usec/1000);
             }
         }
 
@@ -363,7 +362,7 @@ int EnergyCam_UpdateMCU(modbus_t* ctx,char* file,uint16_t InfoFlag) {
         }
 
         chunkWriteTryCnt++;
-        writeRegCnt = modbus_write_registers(ctx, MODBUS_GET_INTERNAL_ADDR_FROM_OFFICIAL(MODBUS_COMMON_HOLDINGREG_VIRTUAL_UPDATECHUNKSTREAM), curRegs2Write+2, &modbusUpdateChunk.asModbusRegs[0]); // +2 regs more for address of current chunk (=sizeof(uint32_t)) 
+        writeRegCnt = modbus_write_registers(ctx, MODBUS_GET_INTERNAL_ADDR_FROM_OFFICIAL(MODBUS_COMMON_HOLDINGREG_VIRTUAL_UPDATECHUNKSTREAM), curRegs2Write+2, &modbusUpdateChunk.asModbusRegs[0]); // +2 regs more for address of current chunk (=sizeof(uint32_t))
 
         if (writeRegCnt == -1) {
             if (chunkWriteTryCnt < CHUNK_WRITE_TRY_COUNT) {
@@ -379,7 +378,7 @@ int EnergyCam_UpdateMCU(modbus_t* ctx,char* file,uint16_t InfoFlag) {
         } else
             chunkWriteTryCnt = 0;
 
-        if (imageChunkStartAddr == 0) 
+        if (imageChunkStartAddr == 0)
             imageReadAddr = 0;      // header which precedes image is taken from image and therefore restart read address
         else
             imageReadAddr += curRegs2Write*2;
@@ -390,7 +389,7 @@ int EnergyCam_UpdateMCU(modbus_t* ctx,char* file,uint16_t InfoFlag) {
         if (writeRegCnt != -1){
 			if(imageBytes2WriteLast - imageBytes2Write > 16*1024){
 				imageBytes2WriteLast = imageBytes2Write;
-             if(InfoFlag > SILENTMODE)  printf("% 6d/%d bytes written, % 6d bytes remaining\n", length - imageBytes2Write, length, imageBytes2Write);        
+             if(InfoFlag > SILENTMODE)  printf("% 6d/%d bytes written, % 6d bytes remaining\n", length - imageBytes2Write, length, imageBytes2Write);
 		    }
 		 }
     } while(imageBytes2Write > 0);
@@ -405,8 +404,8 @@ int EnergyCam_UpdateMCU(modbus_t* ctx,char* file,uint16_t InfoFlag) {
         fprintf(stderr, "CRC of written update image in EnergyCam: %s\n", crcOK?"OK":"failed");
         if (crcOK)
             return MODBUSOK;
-        else 
-            return MODBUSERROR;        
+        else
+            return MODBUSERROR;
     }
 }
 
@@ -417,7 +416,7 @@ int EnergyCam_GetAppFirmwareType(modbus_t* ctx,uint16_t* pFirmwareType) {
     const uint32_t regCnt = 1;
     uint16_t inputRegs[regCnt];
 
-    if(NULL == pFirmwareType) 
+    if(NULL == pFirmwareType)
         return MODBUSERROR;
 
     readRegCnt = modbus_read_input_registers(ctx, MODBUS_GET_INTERNAL_ADDR_FROM_OFFICIAL(MODBUS_COMMON_INPUTREG_MEMMAP_APPFIRMWARETYPE), regCnt, &inputRegs[0]);
@@ -429,8 +428,8 @@ int EnergyCam_GetAppFirmwareType(modbus_t* ctx,uint16_t* pFirmwareType) {
     } else {
         //fprintf(stderr,"EnergyCam_GetAppFirmwareType failed\n");
         return MODBUSERROR;
-    }    
-    return MODBUSERROR; 
+    }
+    return MODBUSERROR;
 }
 
 //read Result of Installation
@@ -439,20 +438,20 @@ int EnergyCam_GetResultOCRInstallation(modbus_t* ctx,uint16_t* pData) {
 
     const uint32_t regCnt = 1;
     uint16_t inputRegs[regCnt];
-    
-    if(NULL == pData) 
+
+    if(NULL == pData)
         return MODBUSERROR;
 
     readRegCnt = modbus_read_input_registers(ctx, MODBUS_GET_INTERNAL_ADDR_FROM_OFFICIAL(MODBUS_SLAVE_INPUTREG_MEMMAP_RESULTINSTALLATION), regCnt, &inputRegs[0]);
     if (readRegCnt != -1) {
-        *pData = inputRegs[0];         
-         
+        *pData = inputRegs[0];
+
         return MODBUSOK;
     } else {
 	    //fprintf(stderr,"EnergyCam_GetResultOCRInstallation  failed \r\n");
         return MODBUSERROR;
-    }    
-    return MODBUSERROR; 
+    }
+    return MODBUSERROR;
 }
 
 //Trigger a new Reading
@@ -469,7 +468,7 @@ int EnergyCam_TriggerReading(modbus_t* ctx) {
         fprintf(stdout, "TriggerReading\n");
         return MODBUSOK;
     }
-    return MODBUSERROR;     
+    return MODBUSERROR;
 }
 
 //Trigger a Installation
@@ -486,7 +485,7 @@ int EnergyCam_TriggerInstallation(modbus_t* ctx) {
         fprintf(stdout, "TriggerInstallation\n");
         return MODBUSOK;
     }
-    return MODBUSERROR;     
+    return MODBUSERROR;
 }
 
 
@@ -504,11 +503,11 @@ int EnergyCam_BMPStart(modbus_t* ctx) {
         //fprintf(stdout, "TriggerReading\n");
         return MODBUSOK;
     }
-    return MODBUSERROR;     
+    return MODBUSERROR;
 }
 
 //fill picture buffer
-int EnergyCam_BMPFillBuffer(modbus_t* ctx, uint8_t *pBuffer, uint32_t BufferSize) 
+int EnergyCam_BMPFillBuffer(modbus_t* ctx, uint8_t *pBuffer, uint32_t BufferSize)
 {
 	uint32_t curRegs2Read;
     uint32_t imageBytes2Read = BufferSize;
@@ -523,7 +522,7 @@ int EnergyCam_BMPFillBuffer(modbus_t* ctx, uint8_t *pBuffer, uint32_t BufferSize
 		curRegs2Read = ((imageBytes2Read < BMP_IMAGE_DATA_BYTE_CNT)? imageBytes2Read : BMP_IMAGE_DATA_BYTE_CNT) / 2; // /2 because from byte / uint16
 
 
-		readRegCnt = modbus_read_input_registers(ctx, MODBUS_GET_INTERNAL_ADDR_FROM_OFFICIAL(MODBUS_COMMON_INPUTREG_VIRTUAL_IMAGEREADFIRST), curRegs2Read, (unsigned short *)pB); // +2 regs more for address of current chunk (=sizeof(uint32_t)) 
+		readRegCnt = modbus_read_input_registers(ctx, MODBUS_GET_INTERNAL_ADDR_FROM_OFFICIAL(MODBUS_COMMON_INPUTREG_VIRTUAL_IMAGEREADFIRST), curRegs2Read, (unsigned short *)pB); // +2 regs more for address of current chunk (=sizeof(uint32_t))
 		pB += curRegs2Read*2;
 
 		imageBytes2Read -= curRegs2Read*2;
@@ -547,10 +546,10 @@ int EnergyCam_GetStatusReading(modbus_t* ctx,uint16_t* pStatus) {
     uint32_t readRegCnt;
     const uint32_t regCnt = 3;
     uint16_t inputRegs[regCnt];
-    
-    if(NULL == pStatus) 
+
+    if(NULL == pStatus)
         return MODBUSERROR;
-    
+
     readRegCnt = modbus_read_input_registers(ctx, MODBUS_GET_INTERNAL_ADDR_FROM_OFFICIAL(MODBUS_SLAVE_INPUTREG_MEMMAP_RESULTOCRVALID), regCnt, &inputRegs[0]);
     if (readRegCnt != -1) {
         *pStatus = inputRegs[0];
@@ -558,8 +557,8 @@ int EnergyCam_GetStatusReading(modbus_t* ctx,uint16_t* pStatus) {
     } else {
         //fprintf(stderr,"EnergyCam_GetStatusReading failed\n");
         return MODBUSERROR;
-    }    
-    return MODBUSERROR; 
+    }
+    return MODBUSERROR;
 }
 
 //Read OCR Result
@@ -567,12 +566,12 @@ int EnergyCam_GetResultOCRInt(modbus_t* ctx, uint32_t* pInt, uint16_t* pFrac) {
     uint32_t readRegCnt;
     const uint32_t regCnt = 3;
     uint16_t inputRegs[regCnt];
-    
-    if(NULL == pInt) 
+
+    if(NULL == pInt)
         return MODBUSERROR;
-    if(NULL == pFrac) 
+    if(NULL == pFrac)
         return MODBUSERROR;
-    
+
     readRegCnt = modbus_read_input_registers(ctx, MODBUS_GET_INTERNAL_ADDR_FROM_OFFICIAL(MODBUS_SLAVE_INPUTREG_MEMMAP_RESULTOCRINTHIGH), regCnt, &inputRegs[0]);
     if (readRegCnt != -1) {
         uint32_t tmp = 0;
@@ -584,8 +583,8 @@ int EnergyCam_GetResultOCRInt(modbus_t* ctx, uint32_t* pInt, uint16_t* pFrac) {
     } else {
         //fprintf(stderr,"EnergyCam_GetResultOCRInt failed\n");
         return MODBUSERROR;
-    }    
-    return MODBUSERROR; 
+    }
+    return MODBUSERROR;
 }
 
 //Read number of pictures done by OCR
@@ -593,10 +592,10 @@ int EnergyCam_GetOCRPicDone(modbus_t* ctx,uint16_t* pCount) {
     uint32_t readRegCnt;
     const uint32_t regCnt = 1;
     uint16_t inputRegs[regCnt];
-    
-    if(NULL == pCount) 
+
+    if(NULL == pCount)
         return MODBUSERROR;
-    
+
     readRegCnt = modbus_read_input_registers(ctx, MODBUS_GET_INTERNAL_ADDR_FROM_OFFICIAL(MODBUS_SLAVE_INPUTREG_MEMMAP_OCRPICDONE), regCnt, &inputRegs[0]);
     if (readRegCnt != -1) {
         *pCount = inputRegs[0];
@@ -604,8 +603,8 @@ int EnergyCam_GetOCRPicDone(modbus_t* ctx,uint16_t* pCount) {
     } else {
         fprintf(stderr,"EnergyCam_GetOCRPicDone failed\n");
         return MODBUSERROR;
-    }    
-    return MODBUSERROR; 
+    }
+    return MODBUSERROR;
 }
 
 unsigned int  EnergyCam_Log2BMPFile(modbus_t* ctx,const char * path,uint32_t Build,uint16_t InfoFlag)
@@ -613,26 +612,23 @@ unsigned int  EnergyCam_Log2BMPFile(modbus_t* ctx,const char * path,uint32_t Bui
 	FILE    * hFileBMP;
 	uint8_t *pBMP = NULL;
 	unsigned int   dwSize=0;
-	unsigned int   dwRW;
 	unsigned int	FileCount = 0;
 	int	Retry = 2;
 	char  FilePath[_MAX_PATH];
-	char  Temp[_MAX_PATH];
-	int Result;
-	
+    int Result;
 
-	int iX;
-		
-	DIR *d;
+
+
+    DIR *d;
 	struct dirent *dir;
-	
-	
+
+
 	sprintf(FilePath,"%s/img",path);
 	mode_t process_mask = umask(0);
 	mkdir(FilePath,S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
 	umask(process_mask);
-		
-	
+
+
 	d = opendir(FilePath);
 	if(d)
 	{
@@ -641,9 +637,9 @@ unsigned int  EnergyCam_Log2BMPFile(modbus_t* ctx,const char * path,uint32_t Bui
 		closedir(d);
 	}
 	FileCount--; //as . and .. are also counted
-	
+
 	sprintf(FilePath,"%s/Image_ecpi_%04d_%06d.bmp",FilePath,Build,FileCount);
-	
+
 	if(InfoFlag > SILENTMODE) printf("Log2BMPFile : %s \r\n",FilePath);
 	dwSize=XSIZE*YSIZE;
 	pBMP = (uint8_t *) malloc(dwSize+1024+sizeof(aryBmpHeadGrey));
@@ -669,7 +665,7 @@ unsigned int  EnergyCam_Log2BMPFile(modbus_t* ctx,const char * path,uint32_t Bui
 
 		if(Result == MODBUSOK){
 			if ( (hFileBMP = fopen(FilePath, "wb")) != NULL ) {
-					fwrite(pBMP, dwSize+sizeof(aryBmpHeadGrey), 1, hFileBMP);	
+					fwrite(pBMP, dwSize+sizeof(aryBmpHeadGrey), 1, hFileBMP);
 					fclose(hFileBMP);
 					chmod(FilePath, 0755);
 				}

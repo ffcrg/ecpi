@@ -1,9 +1,7 @@
-#ifndef ENERGYCAMPI_H
-#define ENERGYCAMPI_H
+#ifndef ENERGYCAMMODBUS_H
+#define ENERGYCAMMODBUS_H
 
 #include "energycampi.h"
-#include "bmp.h"
-
 
 
 
