@@ -41,6 +41,13 @@ $sudo nano /etc/inittab
 
 
 
+////////////////////////////////
+// Install EnergyCam on Meter //
+////////////////////////////////
+A description on how to install the EnergyCam on a Meter by using the button menu can be found 
+in EnergyCam_Manual.pdf available on the ftp-server of FAST Forward.
+
+
 
 
 //////////////////////////////////////////

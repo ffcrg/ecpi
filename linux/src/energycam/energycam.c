@@ -248,6 +248,7 @@ void Intro(int Read)
     printf("   R   : trigger OCR reading\n");
     printf("   r   : read OCR value\n");
     printf("   s   : save BMP File\n");
+    printf("   I   : trigger installation\n");
     printf("   U   : update EnergyCam firmware\n");
     printf("   The meter reading is stored every %d minutes\n",Read);
     printf("   \n");
@@ -296,7 +297,7 @@ void ErrorAndExit(modbus_t** ctx,const char *info,bool bexit) {
 	}
 }
 
-int check4Install(modbus_t** ctx,int infoflag) {
+int check4Install(modbus_t** ctx,bool force, int infoflag) {
     uint16_t Data     = 0;
     int      iTimeout = 0;
 
@@ -304,7 +305,7 @@ int check4Install(modbus_t** ctx,int infoflag) {
     Data = DisplayInstallationStatus(*ctx,infoflag);
 
     //try to install the device if not installed
-    if ((Data == INSTALLATION_NODIGITS) || (Data == INSTALLATION_NOTDONE)) {
+    if ((Data == INSTALLATION_NODIGITS) || (Data == INSTALLATION_NOTDONE) || force) {
         EnergyCam_TriggerInstallation(*ctx);
         usleep(2000*1000);   //sleep 2000ms - wait for Installation
         printf("Installing OCR");
@@ -411,7 +412,7 @@ int singlerun(unsigned int Connection,unsigned int Port,unsigned int Slave,int i
 					printf("FirmwareType %d\n", FirmwareType);
 			}
 
-			check4Install(&ctx,infoflag);
+			check4Install(&ctx,false,infoflag);
 
 			//get last Reading
 			if (MODBUSOK == EnergyCam_GetResultOCRInt(ctx,&OCRData,&Data)) {
@@ -578,7 +579,7 @@ int main(int argc, char *argv[]) {
 		if (Build < 8374)
 			ErrorAndExit(&ctx,"This App requires a Firmwareversion >= 8374. ",true);
 
-		check4Install(&ctx,true); //check if device is installed
+		check4Install(&ctx,false,true); //check if device is installed
 
 		//get last Reading
 		if (MODBUSOK == EnergyCam_GetResultOCRInt(ctx,&OCRData,&Data)) {
@@ -618,6 +619,13 @@ int main(int argc, char *argv[]) {
 			if(key == 's')   {
 				EnergyCam_Log2BMPFile(ctx,cCurrentPath,Build,InfoFlag);
 			}
+
+			//save picture
+			if(key == 'I')   {
+				check4Install(&ctx,true,InfoFlag);
+			}
+
+
 			//update firmware
 			if(key == 'U') {
 				char binaryFileName[1024];
@@ -652,7 +660,7 @@ int main(int argc, char *argv[]) {
 					if(InfoFlag>SILENTMODE) printf("Build %d\n",Build);
 
 
-					check4Install(&ctx,true);
+					check4Install(&ctx,false,true);
 				} else
 					fprintf(stderr, "firmware update failed\n");
 			}
