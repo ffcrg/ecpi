@@ -10,6 +10,8 @@ FAST EnergyCam: The quick and inexpensive way to turn your conventional meter in
 Hardware:
   - Raspberry Pi
   - FAST EnergyCam Cable open wire or FAST EnergyCam Cable USB
+  	(available at http://umwelt-messtechnik.de/index.php?cat=c91_Smart-Grid-Komponenten-Smart-Grid-Komponenten.html)
+
 
 
 Software:
