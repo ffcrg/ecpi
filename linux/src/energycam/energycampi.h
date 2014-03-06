@@ -115,6 +115,15 @@ typedef union _tModbusUpdateChunk_ {
 #define OCR_NODIGITS 0x0000
 
 
+//App Firmware type
+#define SA_FIRMWARE_TYPE_APP_WMBUS_OCR_DEFAULT  0x0000
+#define SA_FIRMWARE_TYPE_APP_WMBUS_T2_OCR_WB    0x0001
+#define SA_FIRMWARE_TYPE_APP_WMBUS_S2_OCR_WB    0x0002
+#define SA_FIRMWARE_TYPE_APP_WMBUS_T2_OCR_BW   (0x0001|0x0004)
+#define SA_FIRMWARE_TYPE_APP_WMBUS_S2_OCR_BW   (0x0002|0x0004)
+
+
+
 #define MODBUS_GET_OFFICAL_ADDR_FROM_INTERNAL(addr)               ((addr)+1)
 #define MODBUS_GET_INTERNAL_ADDR_FROM_OFFICIAL(addr)              ((addr)-1)
 

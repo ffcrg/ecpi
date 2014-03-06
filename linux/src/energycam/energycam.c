@@ -73,7 +73,8 @@ unsigned int Log2XMLFile(const char *path,double Reading)
 		dwSizeIn = ftell(hFile);
 		fseek(hFile, 0L, SEEK_SET);
 
-		pXMLIN = (unsigned char*) malloc(dwSizeIn);
+        pXMLIN = (unsigned char*) malloc(dwSizeIn+4096);
+        memset(pXMLIN,0,sizeof(unsigned char)*(dwSizeIn+4096));
 		if(NULL == pXMLIN) {
 		    printf("Log2XMLFile - malloc failed \r\n");
 		    return 0;
@@ -250,6 +251,8 @@ void Intro(int Read)
     printf("   s   : save BMP File\n");
     printf("   I   : trigger installation\n");
     printf("   U   : update EnergyCam firmware\n");
+    printf("   B   : switch to Black on White firmware\n");
+    printf("   W   : switch to White on Black firmware\n");
     printf("   The meter reading is stored every %d minutes\n",Read);
     printf("   \n");
 }
@@ -523,6 +526,7 @@ int main(int argc, char *argv[]) {
 
     uint16_t Data           = 0;
     uint32_t Build          = 0;
+    uint16_t FWType         = 0;
     uint32_t OCRData        = 0;
 
     modbus_t* ctx = NULL;
@@ -560,6 +564,8 @@ int main(int argc, char *argv[]) {
 				break;
 		} while(MODBUSERROR == EnergyCam_GetManufacturerIdentification(ctx,&Data));
 
+
+
 		if(Data == SAIDENTIFIER) {
 			if(InfoFlag > SILENTMODE) {
 				Colour(PRINTF_GREEN, false);
@@ -575,9 +581,15 @@ int main(int argc, char *argv[]) {
 			if(InfoFlag > SILENTMODE) printf("Build %d\n", Build);
 		}
 
+
 		//Check Buildnumber, GetResultOCRInt requires Build 8374
 		if (Build < 8374)
 			ErrorAndExit(&ctx,"This App requires a Firmwareversion >= 8374. ",true);
+
+		//Read Firmwaretype
+        if (MODBUSOK == EnergyCam_GetAppFirmwareType(ctx,&FWType)){
+                    if(InfoFlag > SILENTMODE) printf("Firmware T2 %s\n",( SA_FIRMWARE_TYPE_APP_WMBUS_T2_OCR_BW == FWType) ? "Black on White" : "White on Black");
+        }
 
 		check4Install(&ctx,false,true); //check if device is installed
 
@@ -627,7 +639,7 @@ int main(int argc, char *argv[]) {
 
 
 			//update firmware
-			if(key == 'U') {
+			if(('B' == key) || ('W' == key) || ('U' == key)) {
 				char binaryFileName[1024];
 
 				//wakeup
@@ -637,8 +649,14 @@ int main(int argc, char *argv[]) {
 						break;
 				} while (MODBUSERROR == EnergyCam_GetManufacturerIdentification(ctx,&Data));
 
-				//default binary file
-				sprintf(binaryFileName,"sensorT2WB.bin");
+				if('W' == key) sprintf(binaryFileName,"sensorT2WB.bin");
+				if('B' == key) sprintf(binaryFileName,"sensorT2BW.bin");
+				if('U' == key) {
+
+                    EnergyCam_GetAppFirmwareType(ctx,&FWType);
+                    sprintf(binaryFileName,( SA_FIRMWARE_TYPE_APP_WMBUS_T2_OCR_BW == FWType) ? "sensorT2BW.bin" : "sensorT2WB.bin");
+                }
+
 				if(file_exist(binaryFileName)){
 					printf("Using: %s \n ",binaryFileName);
 				}else{
@@ -661,8 +679,7 @@ int main(int argc, char *argv[]) {
 
 
 					check4Install(&ctx,false,true);
-				} else
-					fprintf(stderr, "firmware update failed\n");
+				}
 			}
 
 			if (IsNewMinute()){

@@ -301,9 +301,9 @@ int EnergyCam_UpdateMCU(modbus_t* ctx,char* file,uint16_t InfoFlag) {
         if(InfoFlag > SILENTMODE) printf("Starting update...\n");
     } else {
         if (updBuild < curBuild)
-            fprintf(stderr, "Downgrades not allowed, abort\n");
+            fprintf(stderr, "Downgrades not allowed\n");
         if (updBuild == curBuild)
-            fprintf(stderr, "Firmware already installed, abort\n");
+            fprintf(stderr, "Firmware already installed\n");
         return MODBUSERROR;
     }
 
@@ -344,16 +344,16 @@ int EnergyCam_UpdateMCU(modbus_t* ctx,char* file,uint16_t InfoFlag) {
 
         if (imageChunkStartAddr == 0) {
             modbus_set_response_timeout(ctx, &responseTimeoutEraseFlash);
-            if(InfoFlag > SILENTMODE) fprintf(stderr, "modbus_set_response_timeout(%d s, %d ms)\n", (int)responseTimeoutEraseFlash.tv_sec, (int)responseTimeoutEraseFlash.tv_usec/1000);
+            //if(InfoFlag > SILENTMODE) fprintf(stderr, "modbus_set_response_timeout(%d s, %d ms)\n", (int)responseTimeoutEraseFlash.tv_sec, (int)responseTimeoutEraseFlash.tv_usec/1000);
         } else {
             struct timeval old_response_timeout;
             /* Save original timeout */
             modbus_get_response_timeout(ctx, &old_response_timeout);
             if (memcmp(&old_response_timeout, &responseTimeoutStandard, sizeof(struct timeval)) != 0) {
-                if(InfoFlag > SILENTMODE) fprintf(stderr, "modbus_get_response_timeout() = %d s, %d ms\n", (int)old_response_timeout.tv_sec, (int)old_response_timeout.tv_usec/1000);
+                //if(InfoFlag > SILENTMODE) fprintf(stderr, "modbus_get_response_timeout() = %d s, %d ms\n", (int)old_response_timeout.tv_sec, (int)old_response_timeout.tv_usec/1000);
                 /* Define a new timeout! */
                 modbus_set_response_timeout(ctx, &responseTimeoutStandard);
-                if(InfoFlag > SILENTMODE) fprintf(stderr, "modbus_set_response_timeout(%d s, %d ms)\n", (int)responseTimeoutStandard.tv_sec, (int)responseTimeoutStandard.tv_usec/1000);
+                //if(InfoFlag > SILENTMODE) fprintf(stderr, "modbus_set_response_timeout(%d s, %d ms)\n", (int)responseTimeoutStandard.tv_sec, (int)responseTimeoutStandard.tv_usec/1000);
             }
         }
 

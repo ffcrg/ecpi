@@ -92,12 +92,12 @@ $./cpwww.sh
 
 //run make file
 $cd linux/bin
-$make -f mkfile
+$make
 
 
 //serial connection
-//The ecpi Source uses the configuration 115200 Baud, Even Parity, 1 StopBit.
-//If your EnergyCam is configured different, you have to adust the sourcecode.
+//the ecpi Source uses the configuration 115200 Baud, Even Parity, 1 StopBit
+//if your EnergyCam is configured different, you have to adust the sourcecode
 //energycampi.h     #define MODBUSBAUDRATE      115200
 //energycammodbus.c *ctx = (modbus_t* )modbus_new_rtu(comDeviceName, Baud, 'E', 8, 1); 
 
