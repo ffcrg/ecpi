@@ -598,7 +598,7 @@ int main(int argc, char *argv[]) {
 			time_t t     = time(NULL);
 			struct tm tm = *localtime(&t);
 
-			printf("(%02d:%02d:%02d) Reading %04d.%d\n", tm.tm_hour, tm.tm_min, tm.tm_sec, OCRData, Data);
+			printf("(%02d:%02d:%02d) Reading %05d.%d\n", tm.tm_hour, tm.tm_min, tm.tm_sec, OCRData, Data);
 			Log2File(CommandlineDatPath,LogMode,InfoFlag, OCRData, Data);
 		}
 
