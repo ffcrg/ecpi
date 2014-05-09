@@ -454,6 +454,30 @@ int EnergyCam_GetResultOCRInstallation(modbus_t* ctx,uint16_t* pData) {
     return MODBUSERROR;
 }
 
+
+
+//read OCRReadingPeriod
+int EnergyCam_GetOCRReadingPeriod(modbus_t* ctx,uint16_t* pData) {
+    uint32_t readRegCnt;
+
+    const uint32_t regCnt = 1;
+    uint16_t inputRegs[regCnt];
+
+    if(NULL == pData)
+        return MODBUSERROR;
+
+    readRegCnt = modbus_read_registers(ctx, MODBUS_GET_INTERNAL_ADDR_FROM_OFFICIAL(MODBUS_SLAVE_HOLDINGREG_MEMMAP_REGOCRCONFIG), regCnt, &inputRegs[0]);
+    if (readRegCnt != -1) {
+        *pData = MODBUS_SLAVE_OCRCONFIG_READING_EVERY_XMIN_GET(inputRegs[0]);
+
+        return MODBUSOK;
+    } else {
+	    //fprintf(stderr,"EnergyCam_GetOCRReadingPeriod  failed \r\n");
+        return MODBUSERROR;
+    }
+    return MODBUSERROR;
+}
+
 //Trigger a new Reading
 int EnergyCam_TriggerReading(modbus_t* ctx) {
     uint32_t wroteRegCnt;
@@ -465,11 +489,12 @@ int EnergyCam_TriggerReading(modbus_t* ctx) {
         fprintf(stderr, "EnergyCam_TriggerReading failed with '%s'\n", modbus_strerror(errno));
         return MODBUSERROR;
     } else {
-        fprintf(stdout, "TriggerReading\n");
+        //fprintf(stdout, "TriggerReading\n");
         return MODBUSOK;
     }
     return MODBUSERROR;
 }
+
 
 //Trigger a Installation
 int EnergyCam_TriggerInstallation(modbus_t* ctx) {
@@ -482,7 +507,7 @@ int EnergyCam_TriggerInstallation(modbus_t* ctx) {
         fprintf(stderr, "TriggerInstallation failed with '%s'\n", modbus_strerror(errno));
         return MODBUSERROR;
     } else {
-        fprintf(stdout, "TriggerInstallation\n");
+        //fprintf(stdout, "TriggerInstallation\n");
         return MODBUSOK;
     }
     return MODBUSERROR;
@@ -559,6 +584,50 @@ int EnergyCam_GetStatusReading(modbus_t* ctx,uint16_t* pStatus) {
         return MODBUSERROR;
     }
     return MODBUSERROR;
+}
+
+//Read the status of the device
+int EnergyCam_GetStatusEnergyCam(modbus_t* ctx,uint16_t* pStatus) {
+    uint32_t readRegCnt;
+    const uint32_t regCnt = 3;
+    uint16_t inputRegs[regCnt];
+
+    if(NULL == pStatus)
+        return MODBUSERROR;
+
+    readRegCnt = modbus_read_input_registers(ctx, MODBUS_GET_INTERNAL_ADDR_FROM_OFFICIAL(MODBUS_SLAVE_INPUTREG_MEMMAP_STATUSENERGYCAM), regCnt, &inputRegs[0]);
+    if (readRegCnt != -1) {
+        *pStatus = inputRegs[0];
+        return MODBUSOK;
+    } else {
+        //fprintf(stderr,"EnergyCam_GetStatusEnergyCam failed\n");
+        return MODBUSERROR;
+    }
+    return MODBUSERROR;
+}
+
+int EnergyCam_WaitforReadingDone(modbus_t* ctx){
+	int CommandResult;
+	int iRetry;
+	uint16_t Data           = 0;
+
+	//wait for reading done
+	iRetry = 20;
+	do{
+		usleep(100*1000);
+		CommandResult = EnergyCam_GetStatusEnergyCam(ctx,&Data);
+		if (iRetry-- < 0 ) break;
+	}while ((CommandResult == MODBUSERROR) || ((CommandResult == MODBUSOK) && (Data != MODBUS_SLAVE_STATUS_ENERGYCAM_ACTIONCOMPLETED)));
+
+	//wait for reading done
+	iRetry = 20;Data= OCR_ONGOING;
+	do{
+		usleep(100*1000);
+		CommandResult = EnergyCam_GetStatusReading(ctx,&Data);
+		if (iRetry-- < 0 ) break;
+	}while ((CommandResult == MODBUSERROR) || ((CommandResult == MODBUSOK) && (Data >=  OCR_ONGOING)));
+
+return 	CommandResult;
 }
 
 //Read OCR Result
