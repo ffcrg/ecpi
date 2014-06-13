@@ -1,3 +1,13 @@
+#if defined(_WIN32) 
+#include <winsock2.h>
+#include <windows.h>
+#include <stdio.h>
+#include <string.h>
+
+
+#else
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -13,6 +23,8 @@
 #include <dirent.h>
 #include <wiringPi.h>
 #include <ctype.h>
+#endif
+
 #include "modbus.h"
 #include "energycampi.h"
 #include "bmp.h"
@@ -153,11 +165,14 @@ bool saIsImageValid(const tpsaImage pImage, saImageType_t expectedImageType, boo
 int EnergyCamOpen(modbus_t** ctx,unsigned int Connection, unsigned int dwPort, unsigned int Baud, unsigned int slave) {
     char comDeviceName[100];
 
-
+#if defined(_WIN32)
+	sprintf(comDeviceName, "\\\\.\\COM%d", dwPort);  
+#else
 	if(EXPANSIONPORT == Connection)
 			sprintf(comDeviceName, "/dev/ttyAMA%d", dwPort);  //Expansion connector
 	else
 			sprintf(comDeviceName, "/dev/ttyUSB%d", dwPort); //connected via USB
+#endif
 
     *ctx = (modbus_t* )modbus_new_rtu(comDeviceName, Baud, 'E', 8, 1); // parity 'E'ven used by EnergyCam's freemodbus implementation
 
@@ -614,7 +629,7 @@ int EnergyCam_WaitforReadingDone(modbus_t* ctx){
 	//wait for reading done
 	iRetry = 20;
 	do{
-		usleep(100*1000);
+		MSSleep(100);
 		CommandResult = EnergyCam_GetStatusEnergyCam(ctx,&Data);
 		if (iRetry-- < 0 ) break;
 	}while ((CommandResult == MODBUSERROR) || ((CommandResult == MODBUSOK) && (Data != MODBUS_SLAVE_STATUS_ENERGYCAM_ACTIONCOMPLETED)));
@@ -622,7 +637,7 @@ int EnergyCam_WaitforReadingDone(modbus_t* ctx){
 	//wait for reading done
 	iRetry = 20;Data= OCR_ONGOING;
 	do{
-		usleep(100*1000);
+		MSSleep(100);
 		CommandResult = EnergyCam_GetStatusReading(ctx,&Data);
 		if (iRetry-- < 0 ) break;
 	}while ((CommandResult == MODBUSERROR) || ((CommandResult == MODBUSOK) && (Data >=  OCR_ONGOING)));
@@ -687,12 +702,37 @@ unsigned int  EnergyCam_Log2BMPFile(modbus_t* ctx,const char * path,uint32_t Bui
     int Result;
 
 
+#if defined(_WIN32) 
+		sprintf(FilePath,"%s\\img",path);
+		WIN32_FIND_DATA	FindData;
+		char  Temp[_MAX_PATH];
+		HANDLE		hFiles;
 
+		CreateDirectory(FilePath,NULL);
+		strcpy(Temp,FilePath);
+		strcat(Temp,"\\*.bmp");
+
+		memset(&FindData,0,sizeof(WIN32_FIND_DATA));
+
+		if((hFiles = FindFirstFile(Temp, &FindData)) != NULL)
+		{
+			if((FindData.nFileSizeLow + FindData.nFileSizeHigh) > 0)
+				FileCount++;
+
+			do 
+			{
+				FileCount++;
+			} while (FindNextFile(hFiles, &FindData));
+
+			FindClose(hFiles);
+
+		}
+	sprintf(FilePath,"%s\\Img_ecpi_%04d_%06d.bmp",FilePath,Build,FileCount);
+#else
+		sprintf(FilePath,"%s/img",path);
     DIR *d;
 	struct dirent *dir;
 
-
-	sprintf(FilePath,"%s/img",path);
 	mode_t process_mask = umask(0);
 	mkdir(FilePath,S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
 	umask(process_mask);
@@ -707,7 +747,10 @@ unsigned int  EnergyCam_Log2BMPFile(modbus_t* ctx,const char * path,uint32_t Bui
 	}
 	FileCount--; //as . and .. are also counted
 
-	sprintf(FilePath,"%s/Image_ecpi_%04d_%06d.bmp",FilePath,Build,FileCount);
+	sprintf(FilePath,"%s/Img_ecpi_%04d_%06d.bmp",FilePath,Build,FileCount);
+#endif
+
+
 
 	if(InfoFlag > SILENTMODE) printf("Log2BMPFile : %s \r\n",FilePath);
 	dwSize=XSIZE*YSIZE;
@@ -736,7 +779,9 @@ unsigned int  EnergyCam_Log2BMPFile(modbus_t* ctx,const char * path,uint32_t Bui
 			if ( (hFileBMP = fopen(FilePath, "wb")) != NULL ) {
 					fwrite(pBMP, dwSize+sizeof(aryBmpHeadGrey), 1, hFileBMP);
 					fclose(hFileBMP);
+					#if !defined(_WIN32) 
 					chmod(FilePath, 0755);
+					#endif
 				}
 		}
 	}while ((Retry-- > 0) && (Result != MODBUSOK));

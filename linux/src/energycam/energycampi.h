@@ -13,7 +13,9 @@
   #define min(x,y) ((x>y) ? y:x)
 #endif
 
+#ifndef _MAX_PATH
 #define _MAX_PATH 275
+#endif
 
 //Resolution
 #define XSIZE     320
@@ -182,5 +184,10 @@ typedef union _tModbusUpdateChunk_ {
 
 int EnergyCam_GetAppFirmwareType(modbus_t* ctx,uint16_t* pFirmwareType);
 
+#if defined(_WIN32) 
+#define MSSleep(x) Sleep(x)
+#else
+#define MSSleep(x) usleep(x*1000)
+#endif
 
 #endif

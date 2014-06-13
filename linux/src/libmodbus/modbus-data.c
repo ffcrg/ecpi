@@ -38,6 +38,9 @@ void modbus_set_bits_from_byte(uint8_t *dest, int index, const uint8_t value)
 
 /* Sets many bits from a table of bytes (only the bits between index and
    index + nb_bits are set) */
+#if defined (_WIN32)
+extern "C"
+#endif
 void modbus_set_bits_from_bytes(uint8_t *dest, int index, unsigned int nb_bits,
                                 const uint8_t *tab_byte)
 {

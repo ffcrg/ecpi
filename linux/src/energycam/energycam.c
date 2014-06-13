@@ -1,3 +1,14 @@
+#if defined(_WIN32) 
+#include <winsock2.h>
+#include <windows.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdint.h>
+#include <conio.h>
+#include <time.h>
+#include <direct.h>
+
+#else
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -13,13 +24,17 @@
 #include <dirent.h>
 #include <wiringPi.h>
 #include <ctype.h>
+#endif
+
 #include "modbus.h"
 #include "energycampi.h"
 #include "energycammodbus.h"
 
 void Colour(int8_t c, bool cr)
 {
+#if !defined(_WIN32) 
     printf("%c[%dm",0x1B,(c>0) ? (30+c) : c);
+#endif
     if(cr)
         printf("\n");
 }
@@ -39,8 +54,7 @@ int EnergyCam_Log2CSVFile(const char *path,  uint32_t Int, uint16_t Frac)
         fseek(hFile, 0L, SEEK_SET);
         fclose(hFile);
     }
-    else
-        return MODBUSERROR;
+
 
     if ((hFile = fopen(path, "a")) != NULL){
         if (FileSize == 0)  //start a new file with Header
@@ -167,7 +181,9 @@ unsigned int Log2XMLFile(const char *path,double Reading)
         if ( (hFile = fopen(path, "wb")) != NULL ){
             fwrite(pXMLMem, dwSizeIn+dwSize, 1, hFile);
             fclose(hFile);
+			#if !defined(_WIN32) 
             chmod(path, 0666);
+			#endif
         }
     }
 
@@ -215,7 +231,13 @@ uint16_t DisplayInstallationStatus(modbus_t* ctx,int infoflag)
 
 int getkey(void)
 {
-    int character;
+    int character = 0;
+
+#if defined(_WIN32) 
+	if(_kbhit()){ 
+		character = _getch(); // Muss auf keine Eingabe warten, Taste ist bereits gedrückt 
+	}
+#else
     struct termios orig_term_attr;
     struct termios new_term_attr;
 
@@ -233,7 +255,7 @@ int getkey(void)
 
     /* restore the original terminal attributes */
     tcsetattr(fileno(stdin), TCSANOW, &orig_term_attr);
-
+#endif
     return character;
 }
 
@@ -272,17 +294,36 @@ int IsNewMinute(void)
 
 int file_exist (char *filename)
 {
+#if defined(_WIN32)
+	FILE *fp = fopen(filename,"r");
+	if( fp ) {
+		// exists
+		fclose(fp);
+		return 1;
+	} else {
+		return 0;
+	} 
+
+#else
     struct stat   buffer;
     return (stat (filename, &buffer) == 0);
+#endif
 }
 
 void Intro(void)
 {
+
     printf("   \n");
     Colour(62,false);
+#if defined(_WIN32)
+	printf("#################################\n");
+	printf("## ecpi - EnergyCam on Windows ##\n");
+	printf("#################################\n");
+#else
     printf("#################################################\n");
     printf("## ecpi - EnergyCam on raspberry Pi/cubieboard ##\n");
     printf("#################################################\n");
+#endif
 
     Colour(0,true);
     printf("   Usage\n");
@@ -300,29 +341,47 @@ void Intro(void)
 
 void IntroShowParam(void)
 {
+#if defined(_WIN32)
     printf("   \n");
     Colour(62,false);
-    printf("#################################################\n");
-    printf("## ecpi - EnergyCam on raspberry Pi/cubieboard##\n");
-    printf("#################################################\n");
+	printf("#################################\n");
+    printf("## ecpi - EnergyCam on Windows ##\n");
+	printf("#################################\n");
 
     Colour(0,true);
     printf("   Commandline options:\n");
-    printf("   ./ecpi -c USB -p 0 -s 1 -t 5 -l VZ -o 1 -i  \n");
-    printf("   -c USB : use USB connection\n");
-    printf("   -p 0  : Portnumber 0 -> /dev/ttyUSB0\n");
-    printf("   -s 1  : MODBUSSlaveAdress 1 \n");
-    printf("   -t 5  : Readingperiod 5 min \n");
-    printf("   -l VZ : log to (VZ)Volkszähler, (XML) XMLFile, (CSV) CSV File \n");
-    printf("   -f /home/usr : folder to store XMLFile \n");
-    printf("   -o 1  : (1) -> single run, (loop) -> continuous run\n");
-    printf("   -i    : show detailed infos \n\n");
-
-    printf("   ./ecpi -c AMA -p 0 -s 1 -l CSV  \n");
-    printf("   -c AMA : use Expansionport\n");
-    printf("   -p 0   : Portnumber 0 -> /dev/ttyAMA0\n");
-    printf("   -s 1   : MODBUSSlaveAdress 1 \n");
+    printf("   ecpi /p:3 /s:1 /o:1 /i  \n");
+    printf("   /p:3  : Portnumber 3 -> COM3\n");
+    printf("   /s:1  : MODBUSSlaveAdress 1 \n");
+    printf("   /o:1  : (1) -> single run, (loop) -> continuous run\n");
+    printf("   /i    : show detailed infos \n\n");
     printf("   \n");
+#else
+	printf("   \n");
+	Colour(62,false);
+	printf("#################################################\n");
+	printf("## ecpi - EnergyCam on raspberry Pi/cubieboard##\n");
+	printf("#################################################\n");
+
+	Colour(0,true);
+	printf("   Commandline options:\n");
+	printf("   ./ecpi -c USB -p 0 -s 1 -t 5 -l VZ -o 1 -i  \n");
+	printf("   -c USB : use USB connection\n");
+	printf("   -p 0  : Portnumber 0 -> /dev/ttyUSB0\n");
+	printf("   -s 1  : MODBUSSlaveAdress 1 \n");
+	printf("   -t 5  : Readingperiod 5 min \n");
+	printf("   -l VZ : log to (VZ)Volkszähler, (XML) XMLFile, (CSV) CSV File \n");
+	printf("   -f /home/usr : folder to store XMLFile \n");
+	printf("   -o 1  : (1) -> single run, (loop) -> continuous run\n");
+	printf("   -i    : show detailed infos \n\n");
+
+	printf("   ./ecpi -c AMA -p 0 -s 1 -l CSV  \n");
+	printf("   -c AMA : use Expansionport\n");
+	printf("   -p 0   : Portnumber 0 -> /dev/ttyAMA0\n");
+	printf("   -s 1   : MODBUSSlaveAdress 1 \n");
+	printf("   \n");
+#endif
+
 }
 
 
@@ -352,10 +411,10 @@ uint16_t check4Install(modbus_t** ctx,bool force, int infoflag)
     if ((Data == INSTALLATION_NODIGITS) || (Data == INSTALLATION_NOTDONE) || force){
         EnergyCam_TriggerInstallation(*ctx);
         printf("Installing OCR");
-        usleep(2000*1000);   //sleep 2000ms - wait for Installation
+        MSSleep(2000);   //sleep 2000ms - wait for Installation
         iTimeout = 60;
         do{
-            usleep(500*1000);   //sleep 500ms
+            MSSleep(500);   //sleep 500ms
             printf(".");fflush(stdout);
             if (MODBUSERROR == EnergyCam_GetResultOCRInstallation(*ctx,&Data))
                 Data = 0xFFFD; //retry if MODBUS returns with an Error
@@ -388,12 +447,27 @@ int Log2File(char *DataPath, uint16_t mode,uint16_t infoflag, uint32_t Int, uint
     switch(mode)
     {
     case LOGTOCSV :
+		#if defined(_WIN32)
+        if (strlen(DataPath) == 0){
+            _getcwd(param, sizeof(param));
+            sprintf(param, "%s\\ecpi.csv",param);
+        }else{
+            sprintf(param, "%s\\ecpi.csv",DataPath);
+        }
+        EnergyCam_Log2CSVFile(param, Int, Frac);
+
+        #else
         EnergyCam_Log2CSVFile("/var/www/ecpi/data/ecpi.csv", Int, Frac);
+        #endif
         return MODBUSOK;
         break;
     case LOGTOXML :
         if (strlen(DataPath) == 0){
+			#if defined(_WIN32)
+            _getcwd(param, sizeof(param));
+			#else
             getcwd(param, sizeof(param));
+			#endif
             sprintf(param, "%s/ecpi.xml",param);
         }else{
             sprintf(param, "%s/ecpi.xml",DataPath);
@@ -404,6 +478,7 @@ int Log2File(char *DataPath, uint16_t mode,uint16_t infoflag, uint32_t Int, uint
 
         break;
     case LOGTOVZ :
+		#if !defined(_WIN32) 
         if( access( "add2vz.sh", F_OK ) != -1 )
         {
             memset(param, '\0', sizeof(FILENAME_MAX));
@@ -418,6 +493,7 @@ int Log2File(char *DataPath, uint16_t mode,uint16_t infoflag, uint32_t Int, uint
                 if(infoflag > SILENTMODE) printf("%02d:%02d Calling %s returned with 0x%X\n",curtime.tm_hour,curtime.tm_min,param,ret);
             }
         }
+		#endif
         return MODBUSOK;
         break;
     }
@@ -438,7 +514,11 @@ int singlerun(unsigned int Connection,unsigned int Port,unsigned int Slave,int i
     modbus_t* ctx = NULL;
 
     if(infoflag > SILENTMODE){
+        #if defined(_WIN32)
+        printf("Connecting to COM%d Slaveaddress %d\n",Port,Slave);
+        #else
         printf("Connecting to /dev/tty%s%d Slaveaddress %d\n",(Connection==USBPORT) ? "USB" : "AMA",Port,Slave);
+        #endif
     }
 
     if(MODBUSOK == EnergyCamOpen(&ctx,Connection,Port,MODBUSBAUDRATE,Slave)) { //open serial port
@@ -458,12 +538,10 @@ int singlerun(unsigned int Connection,unsigned int Port,unsigned int Slave,int i
                 if (MODBUSOK == EnergyCam_GetAppFirmwareBuildNumber(ctx,&Build,infoflag))
                     printf("Build %d\n", Build);
 
-                //Read FirmwareType
-                if (MODBUSOK == EnergyCam_GetAppFirmwareType(ctx,&FirmwareType))
-                    printf("FirmwareType %d\n", FirmwareType);
-
-                if (MODBUSOK == EnergyCam_GetAppFirmwareType(ctx,&FirmwareType))
-                    printf("FirmwareType %d\n", FirmwareType);
+                //Read Firmwaretype
+                if (MODBUSOK == EnergyCam_GetAppFirmwareType(ctx,&FirmwareType)){
+                    printf("Firmware T2 %s\n",( SA_FIRMWARE_TYPE_APP_WMBUS_T2_OCR_BW == FirmwareType) ? "Black on White" : "White on Black");
+                }
 
 
             }
@@ -485,8 +563,54 @@ int singlerun(unsigned int Connection,unsigned int Port,unsigned int Slave,int i
     return(0);
 }
 
+#if defined(_WIN32)
+//support commandline
+int parseparam(int argc, char *argv[],char *filepath,uint16_t *infoflag,uint16_t *Connection,uint16_t *Port,uint16_t *Slave,uint16_t *Period,uint16_t *opMode,uint16_t *LogMode) {
+	int i;
+	char *key, *value;
 
+	if((NULL == LogMode) || (NULL == opMode) || (NULL == infoflag) || (NULL == Connection) || (NULL == Port) || (NULL == Slave) || (NULL == Period)) return 0;
 
+	*Connection=USBPORT;
+
+	for( i = 1; i < argc; i++ ) {
+		if( *argv[i] == '/' ) {
+			key = argv[i] + 1;
+			value = strchr(key, ':');
+			if( value != NULL ) *value++ = 0;
+
+			switch (*key){
+			case 'i':
+				*infoflag = SHOWDETAILS;
+				break;
+			case 'p':
+				if( NULL != value)
+					*Port = (uint16_t)atoi(value);
+				break;
+			case 's':
+				if( NULL != value)
+					*Slave = (uint16_t)atoi(value);
+				break;
+			case 'f':
+				if( NULL != value)
+					strcpy(filepath,value);
+				break;
+			case 'o':
+				if( NULL != value){
+					if(0 == strcmp("loop",value)) *opMode=LOOPOPERATION;
+					if(0 == strcmp("1",value))    *opMode=SINGLERUN;
+				}
+				break;
+			case 'h':
+				IntroShowParam();
+				exit (0);
+				break;
+			}
+		}
+	}
+	return 0;
+}
+#else
 //support commandline
 int parseparam(int argc, char *argv[],char *filepath,uint16_t *infoflag,uint16_t *Connection,uint16_t *Port,uint16_t *Slave,uint16_t *Period,uint16_t *opMode,uint16_t *LogMode)
 {
@@ -565,7 +689,7 @@ int parseparam(int argc, char *argv[],char *filepath,uint16_t *infoflag,uint16_t
     }
     return 0;
 }
-
+#endif
 
 //////////////////////////////////////////////
 int main(int argc, char *argv[])
@@ -610,12 +734,19 @@ int main(int argc, char *argv[])
     else
     {
         //loop
-        getcwd(cCurrentPath, sizeof(cCurrentPath));
+
+		#if defined(_WIN32)
+		_getcwd(cCurrentPath, sizeof(cCurrentPath));
+		#else
+		getcwd(cCurrentPath, sizeof(cCurrentPath));
+		#endif
         Intro();
 
+		#if !defined(_WIN32)
         //check running on raspberry pi
         if (( EXPANSIONPORT == Connection) &&  (wiringPiSetup () == -1))
             ErrorAndExit(&ctx,"Not running on raspberry pi - now ending",true);
+		#endif
 
 
         if(MODBUSERROR == EnergyCamOpen(&ctx,Connection,Port,MODBUSBAUDRATE,Slave))  //open serial port
@@ -677,7 +808,7 @@ int main(int argc, char *argv[])
 
         while (!((key == 0x1B) || (key == 'q')))
         {
-            usleep(500*1000);   //sleep 500ms
+            MSSleep(500);   //sleep 500ms
 
             key = getkey();   //get key if one was pressed - not waiting
 
@@ -705,6 +836,13 @@ int main(int argc, char *argv[])
             }
             //save picture
             if(key == 's'){
+				 //get Status & wakeup
+                iRetry = 3;
+                do{
+                    if (iRetry-- < 0 )
+                        break;
+                }while (MODBUSERROR == EnergyCam_GetStatusReading(ctx,&Data));
+                if(InfoFlag>SILENTMODE) printf("GetStatusReading %04X \n", Data);
                 EnergyCam_Log2BMPFile(ctx,cCurrentPath,Build,InfoFlag);
             }
 
@@ -747,7 +885,7 @@ int main(int argc, char *argv[])
                     do{
                         if (iRetry-- < 0)
                             break;
-                        usleep(500*1000);   //sleep 500ms
+                        MSSleep(500);   //sleep 500ms
                     }while(MODBUSERROR == EnergyCam_GetAppFirmwareBuildNumber(ctx,&Build,InfoFlag));
                     if(InfoFlag>SILENTMODE) printf("Build %d\n",Build);
                     check4Install(&ctx,false,true);
