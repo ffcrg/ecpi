@@ -166,7 +166,7 @@ int EnergyCamOpen(modbus_t** ctx,unsigned int Connection, unsigned int dwPort, u
     char comDeviceName[100];
 
 #if defined(_WIN32)
-	sprintf(comDeviceName, "\\\\.\\COM%d", dwPort);  
+	sprintf(comDeviceName, "\\\\.\\COM%d", dwPort);  //Expansion connector
 #else
 	if(EXPANSIONPORT == Connection)
 			sprintf(comDeviceName, "/dev/ttyAMA%d", dwPort);  //Expansion connector

@@ -8,7 +8,7 @@ use Raspi-Config to
 	- change_pass 		-> change password for "pi" user
 	- change_timezone
 	- configure_keyboards
-	- boot-behavior 	-> don't start desktop on boot
+	- boot-behaviour 	-> don't start desktop on boot
 
 //use a keyboard and monitor on your raspberry or connect from your PC with a SSH Client (http://www.putty.org/)
 
@@ -20,7 +20,7 @@ $sudo adduser username
 $sudo nano /etc/group
 
 
-//Install apache,git and screen (http://raspi.tv/2012/using-screen-with-raspberry-pi-to-avoid-leaving-ssh-sessions-open)
+//Install apache, git and screen (http://raspi.tv/2012/using-screen-with-raspberry-pi-to-avoid-leaving-ssh-sessions-open)
 $sudo apt-get update
 $sudo apt-get install apache2
 $sudo apt-get install git
@@ -64,11 +64,11 @@ in EnergyCam_Manual.pdf available on the ftp-server of FAST Forward.
 // TxD (yellow)	- RxD (Pin 10)
 
 
-//the expansion port is mapped as /dev/ttyAMA0 ; you have to use the commandine option -c AMA
+//the expansion port is mapped as /dev/ttyAMA0 ; you have to use the commandline option -c AMA
 $ ./ecpi -c AMA
 
 
-//you can also connect the EnergyCam with a USB Communication Box fom FAST
+//you can also connect the EnergyCam with a USB Communication Box from FAST
 //the USB port is mapped as /dev/ttyUSB0
 $ ./ecpi -c USB -p 0
 
@@ -97,7 +97,7 @@ $make
 
 //serial connection
 //the ecpi Source uses the configuration 115200 Baud, Even Parity, 1 StopBit
-//if your EnergyCam is configured different, you have to adust the sourcecode
+//if your EnergyCam is configured different, you have to adjust the source code
 //energycampi.h     #define MODBUSBAUDRATE      115200
 //energycammodbus.c *ctx = (modbus_t* )modbus_new_rtu(comDeviceName, Baud, 'E', 8, 1); 
 
@@ -120,7 +120,7 @@ $screen -r
 $exit
 
 //open website from your PC 
-//type the IP Adress of your raspberry into the adress bar of the browser
+//type the IP Address of your raspberry into the address bar of the browser
 
 
 //////////////////////////

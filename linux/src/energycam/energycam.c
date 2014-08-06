@@ -365,11 +365,10 @@ void IntroShowParam(void)
 
 	Colour(0,true);
 	printf("   Commandline options:\n");
-	printf("   ./ecpi -c USB -p 0 -s 1 -t 5 -l VZ -o 1 -i  \n");
+	printf("   ./ecpi -c USB -p 0 -s 1 -l VZ -o 1 -i  \n");
 	printf("   -c USB : use USB connection\n");
 	printf("   -p 0  : Portnumber 0 -> /dev/ttyUSB0\n");
 	printf("   -s 1  : MODBUSSlaveAdress 1 \n");
-	printf("   -t 5  : Readingperiod 5 min \n");
 	printf("   -l VZ : log to (VZ)Volkszähler, (XML) XMLFile, (CSV) CSV File \n");
 	printf("   -f /home/usr : folder to store XMLFile \n");
 	printf("   -o 1  : (1) -> single run, (loop) -> continuous run\n");
@@ -565,11 +564,11 @@ int singlerun(unsigned int Connection,unsigned int Port,unsigned int Slave,int i
 
 #if defined(_WIN32)
 //support commandline
-int parseparam(int argc, char *argv[],char *filepath,uint16_t *infoflag,uint16_t *Connection,uint16_t *Port,uint16_t *Slave,uint16_t *Period,uint16_t *opMode,uint16_t *LogMode) {
+int parseparam(int argc, char *argv[],char *filepath,uint16_t *infoflag,uint16_t *Connection,uint16_t *Port,uint16_t *Slave,uint16_t *opMode,uint16_t *LogMode) {
 	int i;
 	char *key, *value;
 
-	if((NULL == LogMode) || (NULL == opMode) || (NULL == infoflag) || (NULL == Connection) || (NULL == Port) || (NULL == Slave) || (NULL == Period)) return 0;
+	if((NULL == LogMode) || (NULL == opMode) || (NULL == infoflag) || (NULL == Connection) || (NULL == Port) || (NULL == Slave) ) return 0;
 
 	*Connection=USBPORT;
 
@@ -612,11 +611,11 @@ int parseparam(int argc, char *argv[],char *filepath,uint16_t *infoflag,uint16_t
 }
 #else
 //support commandline
-int parseparam(int argc, char *argv[],char *filepath,uint16_t *infoflag,uint16_t *Connection,uint16_t *Port,uint16_t *Slave,uint16_t *Period,uint16_t *opMode,uint16_t *LogMode)
+int parseparam(int argc, char *argv[],char *filepath,uint16_t *infoflag,uint16_t *Connection,uint16_t *Port,uint16_t *Slave,uint16_t *opMode,uint16_t *LogMode)
 {
     int c;
 
-    if((NULL == LogMode) || (NULL == opMode) || (NULL == infoflag) || (NULL == Connection) || (NULL == Port) || (NULL == Slave) || (NULL == Period)) return 0;
+    if((NULL == LogMode) || (NULL == opMode) || (NULL == infoflag) || (NULL == Connection) || (NULL == Port) || (NULL == Slave)) return 0;
 
     opterr = 0;
     while ((c = getopt (argc, argv, "c:f:hil:o:p:s:t:")) != -1)
@@ -663,12 +662,6 @@ int parseparam(int argc, char *argv[],char *filepath,uint16_t *infoflag,uint16_t
             if (NULL != optarg)
             {
                 *Slave = atoi(optarg);
-            }
-            break;
-        case 't':
-            if (NULL != optarg)
-            {
-                *Period = atoi(optarg);
             }
             break;
         case 'h':
@@ -725,9 +718,7 @@ int main(int argc, char *argv[])
 
     //check commandling arguments
     if(argc > 1)
-        parseparam(argc,argv,CommandlineDatPath,&InfoFlag, &Connection,&Port,&Slave,&ReadingPeriod,&OpMode,&LogMode);
-
-    ReadingPeriod = max(2,min(15,ReadingPeriod)); //limit ReadingPeriod from 2...15
+        parseparam(argc,argv,CommandlineDatPath,&InfoFlag, &Connection,&Port,&Slave,&OpMode,&LogMode);
 
     if(OpMode == SINGLERUN)
         singlerun(Connection,Port,Slave,InfoFlag); //read only once
