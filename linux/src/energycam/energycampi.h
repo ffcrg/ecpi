@@ -187,7 +187,7 @@ int EnergyCam_GetAppFirmwareType(modbus_t* ctx,uint16_t* pFirmwareType);
 #if defined(_WIN32) 
 #define MSSleep(x) Sleep(x)
 #else
-#define MSSleep(x) usleep(x*1000)
+#define MSSleep(x) usleep((x)*1000)
 #endif
 
 #endif

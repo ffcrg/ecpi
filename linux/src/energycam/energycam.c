@@ -1,4 +1,4 @@
-#if defined(_WIN32) 
+#if defined(_WIN32)
 #include <winsock2.h>
 #include <windows.h>
 #include <stdio.h>
@@ -32,7 +32,7 @@
 
 void Colour(int8_t c, bool cr)
 {
-#if !defined(_WIN32) 
+#if !defined(_WIN32)
     printf("%c[%dm",0x1B,(c>0) ? (30+c) : c);
 #endif
     if(cr)
@@ -181,7 +181,7 @@ unsigned int Log2XMLFile(const char *path,double Reading)
         if ( (hFile = fopen(path, "wb")) != NULL ){
             fwrite(pXMLMem, dwSizeIn+dwSize, 1, hFile);
             fclose(hFile);
-			#if !defined(_WIN32) 
+			#if !defined(_WIN32)
             chmod(path, 0666);
 			#endif
         }
@@ -233,9 +233,9 @@ int getkey(void)
 {
     int character = 0;
 
-#if defined(_WIN32) 
-	if(_kbhit()){ 
-		character = _getch(); // Muss auf keine Eingabe warten, Taste ist bereits gedrückt 
+#if defined(_WIN32)
+	if(_kbhit()){
+		character = _getch(); // Muss auf keine Eingabe warten, Taste ist bereits gedrückt
 	}
 #else
     struct termios orig_term_attr;
@@ -302,7 +302,7 @@ int file_exist (char *filename)
 		return 1;
 	} else {
 		return 0;
-	} 
+	}
 
 #else
     struct stat   buffer;
@@ -370,7 +370,7 @@ void IntroShowParam(void)
 	printf("   -p 0  : Portnumber 0 -> /dev/ttyUSB0\n");
 	printf("   -s 1  : MODBUSSlaveAdress 1 \n");
 	printf("   -l VZ : log to (VZ)Volkszähler, (XML) XMLFile, (CSV) CSV File \n");
-	printf("   -f /home/usr : folder to store XMLFile \n");
+	printf("   -f /home/usr : folder to store files \n");
 	printf("   -o 1  : (1) -> single run, (loop) -> continuous run\n");
 	printf("   -i    : show detailed infos \n\n");
 
@@ -416,8 +416,8 @@ uint16_t check4Install(modbus_t** ctx,bool force, int infoflag)
             MSSleep(500);   //sleep 500ms
             printf(".");fflush(stdout);
             if (MODBUSERROR == EnergyCam_GetResultOCRInstallation(*ctx,&Data))
-                Data = 0xFFFD; //retry if MODBUS returns with an Error
-        }while ((iTimeout-->0) && (Data == 0xFFFD));
+                Data = INSTALLATION_ONGOING; //retry if MODBUS returns with an Error
+        }while ((iTimeout-->0) && (Data == INSTALLATION_ONGOING));
         printf("\n");
 
         //Is EnergyCam installed
@@ -456,7 +456,12 @@ int Log2File(char *DataPath, uint16_t mode,uint16_t infoflag, uint32_t Int, uint
         EnergyCam_Log2CSVFile(param, Int, Frac);
 
         #else
-        EnergyCam_Log2CSVFile("/var/www/ecpi/data/ecpi.csv", Int, Frac);
+        if (strlen(DataPath) == 0){
+            sprintf(param, "/var/www/ecpi/data/ecpi.csv");
+        }else{
+            sprintf(param, "%s/ecpi.csv",DataPath);
+        }
+        EnergyCam_Log2CSVFile(param, Int, Frac);
         #endif
         return MODBUSOK;
         break;
@@ -477,7 +482,7 @@ int Log2File(char *DataPath, uint16_t mode,uint16_t infoflag, uint32_t Int, uint
 
         break;
     case LOGTOVZ :
-		#if !defined(_WIN32) 
+		#if !defined(_WIN32)
         if( access( "add2vz.sh", F_OK ) != -1 )
         {
             memset(param, '\0', sizeof(FILENAME_MAX));
@@ -834,7 +839,10 @@ int main(int argc, char *argv[])
                         break;
                 }while (MODBUSERROR == EnergyCam_GetStatusReading(ctx,&Data));
                 if(InfoFlag>SILENTMODE) printf("GetStatusReading %04X \n", Data);
-                EnergyCam_Log2BMPFile(ctx,cCurrentPath,Build,InfoFlag);
+                if (strlen(CommandlineDatPath) == 0)
+                    EnergyCam_Log2BMPFile(ctx,cCurrentPath,Build,InfoFlag); //use current folder
+                else
+                    EnergyCam_Log2BMPFile(ctx,CommandlineDatPath,Build,InfoFlag); //use folder specified with -f
             }
 
             //install device
